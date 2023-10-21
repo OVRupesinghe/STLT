@@ -1,24 +1,20 @@
-const Pool = require("pg").Pool;
-const dotenv = require('dotenv').config()
+const { Sequelize } = require('sequelize');
+const dotenv = require('dotenv').config();
 
-const pool = new Pool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    host: "localhost",
+const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
+    host: 'localhost',
     port: process.env.DB_PORT,
-    database: process.env.DB_NAME
-})
+    dialect: 'postgres',
+});
 
 // Database configuration for RMV
-const rmvPool = new Pool({
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    host: "localhost",
+const rmvSequelize = new Sequelize(process.env.RMV_NAME, process.env.DB_USER, process.env.DB_PASS, {
+    host: 'localhost',
     port: process.env.DB_PORT,
-    database: process.env.RMV_NAME
+    dialect: 'postgres',
 });
 
 module.exports = {
-    rmvPool: rmvPool,
-    pool: pool
+    sequelize: sequelize,
+    rmvSequelize: rmvSequelize,
 };
