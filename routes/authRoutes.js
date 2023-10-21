@@ -1,7 +1,8 @@
 const express = require('express');
 const router  = express.Router()
 const bcrypt = require('bcrypt');
-const { pool } = require('../db.config')
+const { sequelize } = require('../db.config');
+const User = require('../schema/UserSchema');
 const axios = require('axios');
 const jwt = require('jsonwebtoken')
 const {sendOTP, sendMail} = require('../utils/authMessenger');
@@ -21,20 +22,23 @@ router.post('/register', async (req,res) => {
         lname,
         contact,
         email,
-        verifyMode
       } = req.body;
 
-
-      
     try {
           
             // Check if username or NIC already exists
-            const existingUser = await pool.query(
-              'SELECT * FROM users WHERE username = $1 OR NIC = $2 OR email = $3',
-              [username, nic, email]
-            );
+
+            const existingUser = await User.findOne({
+              where: {
+                [Op.or]: [
+                  { username },
+                  { NIC: nic },
+                  { email }
+                ]
+              }
+            });
         
-            if (existingUser.rows.length > 0) {
+            if (existingUser !== null) {
               return res.status(400).json({ error: 'Username or NIC already taken' });
             }
         
@@ -49,10 +53,20 @@ router.post('/register', async (req,res) => {
             const {otp, otpExpiration} = generateOTP();
         
             // Insert user data into the database
-            const newUser = await pool.query(
-              'INSERT INTO users (username, password, nic, fname, lname, secret, email, contactno, verification_mode, otp, otp_expiration) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *',
-              [username, hashedPassword, nic, fname, lname, secret, email, contact, verifyMode, otp, otpExpiration]
-            );
+            const User = require('../schema/UserSchema');
+
+            const newUser = await User.create({
+              username,
+              password: hashedPassword,
+              nic,
+              fname,
+              lname,
+              secret,
+              email,
+              contact_no: contact,
+              otp,
+              otp_expiration: otpExpiration
+            });
 
             // Return the newly created user
             //res.json(newUser.rows[0]);
@@ -60,7 +74,7 @@ router.post('/register', async (req,res) => {
             
             //call method for sending otp
             if(sendOTP(otp, contact)){
-              req.session.userID = newUser.rows[0].userid;
+              req.session.userID = newUser.id;
               res.json({ message: 'User created and OTP sent successfully' });
             }else{
               res.json({ message: 'Could not send the OTP' });
@@ -77,40 +91,40 @@ router.post('/register', async (req,res) => {
 
 router.post('/verify-otp', async (req, res) => {
   //get the otp and the userID
-    const userID = req.session.userID;
-    const { otp } = req.body;
-    console.log(userID);
-    console.log(otp);
-    try {
-      // Retrieve the user from the database based on the provided username
-      const user = await pool.query('SELECT * FROM users WHERE userid = $1', [userID]);
-    
-      if (user.rows.length === 0) {
-        console.log(userID);
-        return res.status(404).json({ error: 'User not found' });
-      }
-  
-      // Check if the OTP and its expiration time match
-      if (parseInt(user.rows[0].otp) != otp) {
-        return res.status(400).json({ error: 'Invalid OTP' });
-      }
-      
-      if (new Date(user.rows[0].otp_expiration) < new Date()) {
-        return res.status(400).json({ error: 'OTP has expired' });
-      }
-  
-      // Set the otp and the expiration fields to null
-      await pool.query('UPDATE users SET contact_verified = true, otp = null, otp_expiration = null WHERE userid = $1', [userID]);
+  const userID = req.session.userID;
+  const { otp } = req.body;
+  console.log(userID);
+  console.log(otp);
+  try {
+    // Retrieve the user from the database based on the provided username
+    const user = await User.findByPk(userID);
 
-      // Clear userID from the session after successful verification
-      delete req.session.user;
-  
-      res.json({ message: 'OTP verification successful' });
-    } catch (error) {
-      console.error('Error during OTP verification:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+    if (!user) {
+      console.log(userID);
+      return res.status(404).json({ error: 'User not found' });
     }
-  });
+
+    // Check if the OTP and its expiration time match
+    if (parseInt(user.otp) != otp) {
+      return res.status(400).json({ error: 'Invalid OTP' });
+    }
+
+    if (new Date(user.otp_expiration) < new Date()) {
+      return res.status(400).json({ error: 'OTP has expired' });
+    }
+
+    // Set the otp and the expiration fields to null
+    await User.update({ contact_verified: true, otp: null, otp_expiration: null }, { where: { id: userID } });
+
+    // Clear userID from the session after successful verification
+    delete req.session.user;
+
+    res.json({ message: 'OTP verification successful' });
+  } catch (error) {
+    console.error('Error during OTP verification:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
   
 
 router.get('/request-new-otp', async(req,res) => {
@@ -118,9 +132,9 @@ router.get('/request-new-otp', async(req,res) => {
   
   try {
     // Retrieve the user from the database based on the provided username
-    const user = await pool.query('SELECT * FROM users WHERE userid = $1', [userID]);
+    const user = await User.findOne({ where: { id: userID } });
 
-    if (user.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -129,11 +143,11 @@ router.get('/request-new-otp', async(req,res) => {
     
 
     // Update the user's otp and the expiration time to the newly generated once
-    await pool.query('UPDATE users SET otp = $1, otp_expiration = $2 WHERE userid = $3', [otp,otpExpiration,userID]);
+    await User.update({ otp: otp, otp_expiration: otpExpiration }, { where: { id: userID } });
 
     //Send the new OTP to the user
     //call method for sending otp
-    if(sendOTP(newOtp, user.rows[0].contactno)){
+    if(sendOTP(newOtp, user.contact_no)){
      res.json({ message: 'New OTP has been sent.' });
     }else{
       res.json({ message: 'Could not send the OTP' });
@@ -151,20 +165,20 @@ router.post('/login', async (req,res) => {
 
   try {
     // Retrieve the user from the database based on the provided username
-    const user = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    const user = await User.findOne({ where: { username: username } });
 
-    if (user.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
     //Check whether the user account is verified or not
     //If not verified then send them to verification page, else continue
-    if(!user.rows[0].contact_verified || !user.rows[0].admin_verified){
+    if(!user.contact_verified){
       return res.status(401).json({ error: 'Unverified Account' });
     }
 
     // Compare the provided password with the hashed password from the database
-    const isPasswordValid = await bcrypt.compare(pass, user.rows[0].password);
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
 
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -172,10 +186,10 @@ router.post('/login', async (req,res) => {
 
     // User is authenticated. Generate a JWT token with user information.
     const userrole = "general-user";
-    const fname = user.rows[0].fname;
+    const fname = user.fname;
 
     const payload = {
-      userid: user.rows[0].userid,
+      userid: user.id,
       username: username,
       userrole: userrole
     };
@@ -185,8 +199,8 @@ router.post('/login', async (req,res) => {
     const refreshToken = jwt.sign(payload, secretKey, { expiresIn: '7d' }); // Refresh token expires in 1 day
 
     
-    await pool.query('DELETE FROM user_tokens WHERE userid = $1', [user.rows[0].userid]);
-    await pool.query('INSERT INTO user_tokens(userid,refresh_token) values($1,$2)', [user.rows[0].userid, refreshToken]);
+    await sequelize.query(`DELETE FROM user_tokens WHERE userid = ${user.id}`);
+    await sequelize.query(`INSERT INTO user_tokens(userid,refresh_token) VALUES(${user.id},${refreshToken})`);
 
     res.cookie('jwt', refreshToken, {httpOnly: true, sameSite:'none', secure:true, maxAge:24*60*60*1000})
     res.json({ fname, username, userrole, accessToken });
@@ -207,7 +221,12 @@ router.get('/refresh', async (req,res) => {
     const refreshToken = cookies.jwt;
     
     // Retrieve the user from the database based on the provided username
-    const user = await pool.query('SELECT ut.*, u.* FROM user_tokens ut INNER JOIN users u ON ut.userid = u.userid  WHERE ut.refresh_token = $1', [refreshToken]);
+    const user = await User.findOne({
+      include: [{
+        model: UserToken,
+        where: { refresh_token: refreshToken }
+      }]
+    });
 
     if(!user) {
       console.log("No user found")
@@ -215,11 +234,11 @@ router.get('/refresh', async (req,res) => {
     }
 
     const userrole = "general-user";
-    const username = user.rows[0].username;
-    const fname = user.rows[0].fname;
+    const username = user.username;
+    const fname = user.fname;
     // User is authenticated. Generate a JWT token with user information.
     const payload = {
-      userid: user.rows[0].userid,
+      userid: user.id,
       username: username,
       userrole: userrole
     };
@@ -255,13 +274,14 @@ router.get('/logout', async (req,res) => {
     const refreshToken = cookies.jwt;
     
     // Retrieve the user from the database based on the provided username
-    const user = await pool.query('SELECT * FROM user_tokens WHERE refresh_token = $1', [refreshToken]);
+    const user = await sequelize.query(`SELECT * FROM user_tokens WHERE refresh_token = ${refreshToken}`);
+
     if(!user) {
       res.clearCookie('jwt', {httpOnly: true, sameSite:'none', secure:true});
       return res.sendStatus(204); 
     }
     
-    await pool.query('DELETE FROM user_tokens WHERE userid = $1', [user.rows[0].userid]);
+    await sequelize.query(`DELETE FROM user_tokens WHERE userid = ${user.id}`);
 
     res.clearCookie('jwt', {httpOnly:true, sameSite:'none', secure:true});
     res.sendStatus(204);
