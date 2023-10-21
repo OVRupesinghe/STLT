@@ -1,7 +1,6 @@
 const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session); 
-const { pool } = require('../db.config');
 
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
