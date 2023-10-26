@@ -5,7 +5,7 @@ require('dotenv').config();
 const app = express();
 
 app.get('/services/:serviceName', (req, res) => {
-  const serviceName = req.params.serviceName; // this should be called as follows +> /discover?serviceName=nameOfTheService
+  const serviceName = req.params.serviceName;
   console.log(serviceName);
   if (serviceName) {
     const serviceInfo = serviceRegistry.getService(serviceName);
