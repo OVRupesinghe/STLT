@@ -48,7 +48,7 @@ app.post('/payment/process', async (req, res) => {
             };
 
             //add the payment to the database
-            data.payments.push(paymentData);
+            data.push(paymentData);
             fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
             console.log('Data written to file');
 
@@ -73,7 +73,7 @@ app.post('/payment/:id/refund', async (req, res) => {
 
         if(payment.data.status){
             //update the payment in the database (in this case we will use a json file)
-            for (payment of data.payments) {
+            for (payment of data) {
                 if (payment.id == req.params.id) {
                     payment.status = payment.data.status;
                     fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
@@ -110,7 +110,7 @@ app.get('/payment/:id', async (req, res) => {
         let returnPayment = payment.data;
 
         //concatenate the data from the database and the payment gateway
-        for (payment of data.payments) {
+        for (payment of data) {
             if (payment.id == req.params.id) {
                 returnPayment = {...returnPayment, ...payment};
                 break;
