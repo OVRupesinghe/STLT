@@ -16,7 +16,7 @@ app.get('/payments', (req, res) => {
 });
 
 //get request to get a specific payment
-app.get('/payment/:id', (req, res) => {
+app.get('/payments/:id', (req, res) => {
     console.log('sending the payment with id: ' + req.params.id);
     const paymentId = req.params.id;
 
@@ -32,7 +32,7 @@ app.get('/payment/:id', (req, res) => {
 });
 
 //create payment
-app.post('/payment', (req, res) => {
+app.post('/payments', (req, res) => {
     console.log('creating a new payment');
     let paymentData = req.body;
     try {
@@ -65,7 +65,7 @@ app.post('/payment', (req, res) => {
 
 
 //tokenize credit card information
-app.post('/payment/tokenize', (req, res) => {
+app.post('/payments/tokenize', (req, res) => {
     console.log('tokenizing the credit card information');
     const creditCardInfo = req.body;
     try {

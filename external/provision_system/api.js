@@ -31,7 +31,7 @@ app.get('/services/:id', (req, res) => {
     res.json({ message: "Service cannot be found" });
 });
 
-//create payment
+//create service (probably not needed)
 app.post('/services', (req, res) => {
     console.log('creating a new service');
     let serviceData = req.body;
