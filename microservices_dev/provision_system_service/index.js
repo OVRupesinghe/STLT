@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-const data = require('./schema/data.json'); //
+const data = require('./schema/service_users.json'); //
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
 const e = require('express');
@@ -50,10 +50,25 @@ app.post('/services/:id/activate', async (req, res) => {
     try {
         console.log('activating the service with id: ' + req.params.id);
 
-        //do we check that the user has already activated the service? or is it done by the provision system?
+        //?do we check that the user has already activated the service? or is it done by the provision system?
         
         //call the provision system REST API to activate the service
         const service = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
+
+        //add to data.json file
+        for (service of data) {
+            if(service.id == req.params.id){
+                service.users.filter(user => user.id == req.body.userId) ? 
+                
+                service.users.find(user => user.id == req.body.userId).status = 'active' :                  
+
+                service.users.push({
+                    id: req.body.userId,
+                    status: 'active'
+                });
+                break;
+            }
+        }
 
         //TODO:: add payment service call here
         
@@ -74,6 +89,14 @@ app.post('/services/:id/deactivate', async (req, res) => {
         
         //call the provision system REST API to deactivate the service
         const service = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/deactivate', req.body);
+
+        //add to data.json file
+        for (service of data) {
+            if(service.id == req.params.id){
+                service.users.find(user => user.id == req.body.userId).status = 'inactive';
+                break;
+            }
+        }
         
         //return the services
         res.statusCode = 200;
@@ -82,6 +105,35 @@ app.post('/services/:id/deactivate', async (req, res) => {
         console.error(error);
         res.statusCode = error.response.status;
         res.json({ message: error.response.data.message });
+    }
+});
+
+//endpoint to get all the users who have activated services
+app.get('/services/:id/users', async (req, res) => {
+    try {
+        console.log('sending all the users who have activated the service with id: ' + req.params.id);
+        
+        //users who have activated the service is in the schema/data.json file
+        const users = [];
+
+        for (service of data) {
+            if(service.id == req.params.id){
+                for(user of service.users){
+                    if(user.status == 'active'){
+                        users.push(user);
+                    }
+                }
+            }
+        }
+
+        //return the services
+        res.statusCode = 200;
+        res.json(users);
+
+    } catch (error) {
+        console.error(error);
+        res.statusCode = 500;
+        res.json({ message: "Internal server error occurred" });
     }
 });
 
