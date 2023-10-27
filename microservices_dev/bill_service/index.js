@@ -13,9 +13,16 @@ app.get('/bills/:userId', (req, res) => {
     const userId = req.params.userId;
     const bills = [];
 
+    // Check if query parameters for date range are present
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+    const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
+
     for (bill of data) {
         if (bill.userId == userId) {
-            bills.push(bill);
+            // Check if bill is within date range
+            if ((!startDate || bill.when >= startDate) && (!endDate || bill.when <= endDate)) {
+                bills.push(bill);
+            }
         }
     }
     res.statusCode = 200;
@@ -44,18 +51,7 @@ app.post('/bill', (req, res) => {
     console.log('creating a new bill');
     let billData = req.body;
     try {
-        const newBillInfo = {
-            id: uuid(),
-            userId: billData.userId,
-            serviceId: billData.serviceId,
-            amount: billData.amount,
-            when: new Date(),
-            status: 'pending'
-        };
-
-        data.push(newBillInfo);
-
-        fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+        const newBillInfo = createBill(billData);
 
         //TODO:: send message to notification service to notify the user about the bill
 
@@ -128,3 +124,59 @@ app.post('/bill/:id/cancel', async (req, res) => {
         res.json({ message: error.response.data.message });
     }
 });
+
+
+//month start cron job to generate bills
+app.post('/bill/generate', (req, res) => {
+    console.log('generating bills for the month');
+    try {
+        //TODO:: call the provision system service to get all the users who have activated services
+
+
+        //Step 1 : get all the services
+        const services = []; //assign the response from the provision system service call to this variable
+
+        //Step 2 : get all the activated users for each service
+        for (service of services) {
+            const activatedUsers = []; //assign the response from the provision system service call to this variable
+
+            //Step 3 : calculate the bill for each user
+            for (user of activatedUsers) {
+                const billData = {
+                    userId: user.id,
+                    serviceId: service.id,
+                    amount: service.price
+                };
+                //Step 4 : create the bill
+                createBill(billData);
+
+                //TODO:: send message to notification service to notify the user about the bill
+            }
+        }
+
+
+    }
+    catch (err) {
+        console.error('Error writing file', err);
+        res.json({ message: "Internal server error occurred" });
+    }
+});
+
+
+
+const createBill = (billData) => {
+    const newBillInfo = {
+        id: uuid(),
+        userId: billData.userId,
+        serviceId: billData.serviceId,
+        amount: billData.amount,
+        when: new Date(),
+        status: 'pending'
+    };
+
+    data.push(newBillInfo);
+
+    fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+
+    return newBillInfo;
+}
