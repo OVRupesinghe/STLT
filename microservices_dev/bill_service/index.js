@@ -31,7 +31,7 @@ app.get('/bills/:userId', (req, res) => {
 
 
 //get a specific bill
-app.get('/bill/:id', (req, res) => {
+app.get('/bills/:id', (req, res) => {
     console.log('sending the bill with id: ' + req.params.id);
     const billId = req.params.id;
 
@@ -47,7 +47,7 @@ app.get('/bill/:id', (req, res) => {
 });
 
 //create bill
-app.post('/bill', (req, res) => {
+app.post('/bills', (req, res) => {
     console.log('creating a new bill');
     let billData = req.body;
     try {
@@ -68,7 +68,7 @@ app.post('/bill', (req, res) => {
 
 
 //pay the bill
-app.post('/bill/:id/pay', async (req, res) => {
+app.post('/bills/:id/pay', async (req, res) => {
     try {
         console.log('paying the bill with id: ' + req.params.id);
 
@@ -99,7 +99,7 @@ app.post('/bill/:id/pay', async (req, res) => {
 
 
 //cancel the bill
-app.post('/bill/:id/cancel', async (req, res) => {
+app.post('/bills/:id/cancel', async (req, res) => {
     try {
         console.log('cancelling the bill with id: ' + req.params.id);
 
@@ -127,7 +127,7 @@ app.post('/bill/:id/cancel', async (req, res) => {
 
 
 //month start cron job to generate bills
-app.post('/bill/generate', (req, res) => {
+app.post('/bills/generate', (req, res) => {
     console.log('generating bills for the month');
     try {
         //TODO:: call the provision system service to get all the users who have activated services
