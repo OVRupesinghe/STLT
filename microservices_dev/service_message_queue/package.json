@@ -1,7 +1,7 @@
 {
-  "name": "authentication_service",
+  "name": "service_registry",
   "version": "1.0.0",
-  "description": "Service responsible for registering new users, loging users in , and authenticating.",
+  "description": "Service registry of the microservices that will be used to keep track of the services",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,9 +9,9 @@
     "dev": "nodemon index.js"
   },
   "keywords": [
-    "authentication",
-    "registration",
-    "login"
+    "message-broker",
+    "message-queue",
+    "service-communication"
   ],
   "author": "Bobby",
   "license": "MIT",
@@ -20,6 +20,6 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "nodemon": "^3.0.1",
-    "uuid": "^9.0.1"
+    "socket.io": "^4.7.2"
   }
 }
