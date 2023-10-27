@@ -81,7 +81,7 @@ app.post('/payments/tokenize', (req, res) => {
 
 
 //refund the payment
-app.post('/payment/:id/refund', (req, res) => {
+app.post('/payments/:id/refund', (req, res) => {
     console.log('refunding the payment with id: ' + req.params.id);
     const paymentId = req.params.id;
 
