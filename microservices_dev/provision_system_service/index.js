@@ -86,5 +86,10 @@ app.post('/services/:id/deactivate', async (req, res) => {
 });
 
 
+//listen on the port specified in the .env file
+app.listen(process.env.PORT, () => {
+    console.log(`Listening on port http://localhost:${process.env.PORT}`);
+});
+
 
 
