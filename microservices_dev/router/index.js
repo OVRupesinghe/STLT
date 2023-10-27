@@ -9,11 +9,9 @@ app.get('/users', async (req, res) => {
     let response = await axios.get(`http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`);
     let data = await response.data;
     if (data) {
-      console.log(data.serviceInfo);
       let intermediaResponse = await axios.get(`http://${data.serviceInfo.host}:${data.serviceInfo.port}/users`);
       let intermediaData = await intermediaResponse.data;
-      console.log(intermediaData.users);
-      res.send(intermediaData.users);
+      res.json(intermediaData.users);
     } else {
       res.statusCode = 500;
       res.json({ message: "An internal server error occurred" });
