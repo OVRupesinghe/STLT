@@ -16,7 +16,7 @@ app.post('/payment/tokenize', async (req, res) => {
         console.log('tokenizing the credit card information');
 
         //call the payment gateway REST API to tokenize the credit card information
-        const token = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payment/tokenize', req.body);
+        const token = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/tokenize', req.body);
 
         //return the token
         res.statusCode = 200;
@@ -34,7 +34,7 @@ app.post('/payment/process', async (req, res) => {
         console.log('processing the payment');
 
         //call the payment gateway REST API to process the payment
-        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payment/', req.body);
+        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/', req.body);
 
         if(payment.data.status){
             //create the payment in the database (in this case we will use a json file)
@@ -69,7 +69,7 @@ app.post('/payment/:id/refund', async (req, res) => {
         console.log('refunding the payment with id: ' + req.params.id);
 
         //call the payment gateway REST API to refund the payment
-        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payment/' + req.params.id + '/refund', req.body);
+        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id + '/refund', req.body);
 
         if(payment.data.status){
             //update the payment in the database (in this case we will use a json file)
@@ -103,7 +103,7 @@ app.get('/payment/:id', async (req, res) => {
         console.log('getting the payment details with id: ' + req.params.id);
 
         //call the payment gateway REST API to get the payment details
-        const payment = await axios.get(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payment/' + req.params.id);
+        const payment = await axios.get(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id);
 
         //?do we have to send the data in the schema/data.json file? or is it done by the payment gateway?
 
