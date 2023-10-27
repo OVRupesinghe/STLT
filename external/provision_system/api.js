@@ -56,3 +56,44 @@ app.post('/services', (req, res) => {
         res.json({ message: "Internal server error occurred" });
     }
 });
+
+//activate service
+app.post('/services/:id/activate', (req, res) => {
+    console.log('activating the service with id: ' + req.params.id);
+    const serviceId = req.params.id;
+
+    //only check if the service exists
+    for (service of data) {
+        if (service.id == serviceId) {
+            res.statusCode = 200;
+            res.json({ message: "Service activated" });
+            return;
+        }
+    }
+
+    res.statusCode = 404;
+    res.json({ message: "Service cannot be found" });
+});
+
+//deactivate service
+app.post('/services/:id/deactivate', (req, res) => {
+    console.log('deactivating the service with id: ' + req.params.id);
+    const serviceId = req.params.id;
+
+    //only check if the service exists
+    for (service of data) {
+        if (service.id == serviceId) {
+            res.statusCode = 200;
+            res.json({ message: "Service deactivated" });
+            return;
+        }
+    }
+
+    res.statusCode = 404;
+    res.json({ message: "Service cannot be found" });
+});
+
+//start the server
+app.listen(process.env.PORT, () => {
+    console.log('Provision system service started on port ' + process.env.PORT);
+});

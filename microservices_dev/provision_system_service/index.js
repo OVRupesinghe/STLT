@@ -52,9 +52,6 @@ app.post('/services/:id/activate', async (req, res) => {
 
         //?do we check that the user has already activated the service? or is it done by the provision system?
         
-        //call the provision system REST API to activate the service
-        const service = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
-
         //add to data.json file
         for (service of data) {
             if(service.id == req.params.id){
@@ -69,12 +66,25 @@ app.post('/services/:id/activate', async (req, res) => {
                 break;
             }
         }
+        //call the provision system REST API to activate the service
+        const response = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
 
-        //TODO:: add payment service call here
+        if(response.status){
+            //TODO:: add payment service call here
+
+            //return the services
+            res.statusCode = 200;
+            res.json({
+                message: 'Service activated successfully',
+            });
+        }
+        else{
+            res.statusCode = 400;
+            res.json({
+                message: 'Service activation failed',
+            });
+        }
         
-        //return the services
-        res.statusCode = 200;
-        res.json(service.data);
     } catch (error) {
         console.error(error);
         res.statusCode = error.response.status;
@@ -87,9 +97,6 @@ app.post('/services/:id/deactivate', async (req, res) => {
     try {
         console.log('deactivating the service with id: ' + req.params.id);
         
-        //call the provision system REST API to deactivate the service
-        const service = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/deactivate', req.body);
-
         //add to data.json file
         for (service of data) {
             if(service.id == req.params.id){
@@ -97,10 +104,22 @@ app.post('/services/:id/deactivate', async (req, res) => {
                 break;
             }
         }
+        //call the provision system REST API to deactivate the service
+        const response = await axios.post(env.process.PROVISION_SYSTEM_URL + env.process.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/deactivate', req.body);
+
+        if(response.status){
+            res.statusCode = 200;
+            res.json({
+                message: 'Service deactivated successfully',
+            });
+        }
+        else{
+            res.statusCode = 400;
+            res.json({
+                message: 'Service deactivation failed',
+            });
+        }
         
-        //return the services
-        res.statusCode = 200;
-        res.json(service.data);
     } catch (error) {
         console.error(error);
         res.statusCode = error.response.status;

@@ -129,3 +129,8 @@ const processToken = (token) => {
     untokenize(token);
     return true;
 }
+
+//start the server
+app.listen(process.env.PORT, () => {
+    console.log('Payment gateway service started on port ' + process.env.PORT);
+});
