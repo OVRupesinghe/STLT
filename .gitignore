@@ -3,3 +3,4 @@ db.sql
 uploads
 index.html
 *.txt
+.vscode
