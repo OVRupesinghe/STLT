@@ -6,7 +6,6 @@ const app = express();
 
 app.get('/services/:serviceName', (req, res) => {
   const serviceName = req.params.serviceName;
-  console.log(serviceName);
   if (serviceName) {
     const serviceInfo = serviceRegistry.getService(serviceName);
     res.statusCode = 200;
@@ -49,6 +48,6 @@ app.delete('/services/:serviceName', (req, res) => {
 });
 
 app.listen(process.env.PORT, () => {
-  console.log(`listening on http://localhost:${process.env.PORT}`);
+  console.log(`service registry started : listening on http://localhost:${process.env.PORT}`);
 });
 

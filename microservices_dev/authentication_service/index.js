@@ -2,13 +2,31 @@ const express = require('express');
 const app = express();
 require('dotenv').config();
 const data = require('./schema/data.json');
+const users = require('./schema/users.json');
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
+const cors = require('cors'); 
 
 app.use(express.json());
 
+
+
 app.post('/login', (req, res) => {
-  // add the logic here
+ 
+  const { username, pass } = req.body;
+  
+
+  for (var user of users) {
+    if (user.username === username && user.password === pass) {
+      res.statusCode = 200;
+      const userId= user.id;
+      const userrole = user.role;
+      res.json({message: "Login successful", userId, userrole});
+      return;
+    }
+  }
+  res.statusCode = 401;
+  res.json({message: "Login failed"});
 });
 
 app.post('/register', (req, res) => {
@@ -62,5 +80,5 @@ app.patch('/user/:id', (req, res) => {
 });
 
 app.listen(process.env.PORT, () => {
-  console.log(`Listening on port http://localhost:${process.env.PORT}`);
+  console.log(`Auth service started : Listening on port http://localhost:${process.env.PORT}`);
 });
