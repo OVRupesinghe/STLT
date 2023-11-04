@@ -1,0 +1,20 @@
+{
+  "name": "service_registry",
+  "version": "1.0.0",
+  "description": "Service registry of the microservices that will be used to keep track of the services",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "message-broker",
+    "message-queue",
+    "service-communication"
+  ],
+  "author": "Bobby",
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^0.10.3",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}

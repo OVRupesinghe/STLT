@@ -1,0 +1,14 @@
+[
+  {
+    "name": "userManagement",
+    "host": "localhost",
+    "port": 10001,
+    "lastHeartBeat": 0
+  },
+  {
+    "name": "authenticationService",
+    "host": "localhost",
+    "port": 10002,
+    "lastHeartBeat": 0
+  }
+]
