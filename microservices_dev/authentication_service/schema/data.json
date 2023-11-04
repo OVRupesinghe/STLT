@@ -3,18 +3,11 @@
     "id": 1,
     "fname": "Bobby",
     "lname": "Robertson",
-    "address": "England"
-  },
-  {
-    "id": 2,
-    "fname": "John",
-    "lname": "Doe",
-    "address": "England"
-  },
-  {
-    "id": 3,
-    "fname": "Jane",
-    "lname": "Doe",
-    "address": "Sri Lanka"
+    "address": "England",
+    "username": "user",
+    "password": "1234",
+    "role": "user",
+    "email": "sr@gmail.com",
+    "phone": "1234567890"
   }
 ]

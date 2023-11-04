@@ -1,11 +1,10 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-const data = require('./schema/data.json');
-const users = require('./schema/users.json');
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
 const cors = require('cors'); 
+const data = require('./schema/data.json');
 
 app.use(express.json());
 
@@ -13,7 +12,7 @@ app.post('/login', (req, res) => {
  
   const { username, pass } = req.body;
 
-  for (var user of users) {
+  for (var user of data) {
     if (user.username === username && user.password === pass) {
       res.statusCode = 200;
       const userId= user.id;
@@ -25,6 +24,47 @@ app.post('/login', (req, res) => {
   res.statusCode = 401;
   res.json({message: "Login failed"});
 });
+//function to check whether username already exists
+app.get('/checkusername/:username', (req, res) => {
+  const username = req.params.username;
+  for (var user of data) {
+    if (user.username == username) {
+      res.statusCode = 200;
+     //return user id
+      res.json({message: "Username already exists"});
+      return;
+    }
+  }
+  res.statusCode = 200;
+  res.json({message: "Username not found"});
+});
+
+app.get('/checkemail/:email', (req, res) => {
+  const email = req.params.email;
+  for (var user of data) {
+    if (user.email == email) {
+      res.statusCode = 200;
+      res.json({message: "User with this email already exists"});
+      return;
+    }
+  }
+  res.statusCode = 200;
+  res.json({message: "Email not found"});
+});
+ 
+app.get('/checkphone/:phone', (req, res) => {
+  const phone = req.params.phone;
+  for (var user of data) {
+    if (user.phone == phone) {
+      res.statusCode = 200;
+      res.json({message: "User with this phone number already exists"});
+      return;
+    }
+  }
+  res.statusCode = 200;
+  res.json({message: "Phone number not found"});
+});
+
 
 app.post('/register', (req, res) => {
   // add the logic here
