@@ -1,17 +1,20 @@
 [
   {
     "id": 1,
-    "name": "Bobby Tarantino",
+    "fname": "Bobby",
+    "lname": "Robertson",
     "address": "England"
   },
   {
     "id": 2,
-    "name": "Robertson",
+    "fname": "John",
+    "lname": "Doe",
     "address": "England"
   },
   {
     "id": 3,
-    "name": "Sampumal",
+    "fname": "Jane",
+    "lname": "Doe",
     "address": "Sri Lanka"
   }
 ]

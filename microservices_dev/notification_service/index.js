@@ -1,7 +1,8 @@
-const Consumer = require('../service_message_queue/consumer');
+const queueHandler = require("../service_message_queue/queuehandler");
 
-const consumer = new Consumer();
-consumer.setup('alerts-exchange', 'direct', 'notification-queue', 'notices');
-consumer.consume((data) => {
-    console.log(data);
-});
+function handleMessage(message) {
+    // Process the received message here
+    console.log("Handling message:", message);
+}
+
+queueHandler.consumeFromQueue("MiddlewareQueue", handleMessage);
