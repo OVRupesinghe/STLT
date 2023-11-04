@@ -5,6 +5,7 @@ const fs = require('fs');
 const {v4: uuid } = require('uuid');
 const cors = require('cors'); 
 const data = require('./schema/data.json');
+const exisitingUsers = require('./schema/existing_users.json');
 
 app.use(express.json());
 
@@ -65,9 +66,36 @@ app.get('/checkphone/:phone', (req, res) => {
   res.json({message: "Phone number not found"});
 });
 
+app.get('/checkphoneValidity/:phone', (req, res) => {
+  //check if mobile number is in the existing users list
+  const phone = req.params.phone;
+  for (var user of exisitingUsers) {
+    if (user.phone == phone) {
+      res.statusCode = 200;
+      res.json({message: "Valid phone number"});
+      return;
+    }
+  }
+  res.statusCode = 200;
+  res.json({message: "Not a valid SriTel phone number"});
+});
 
 app.post('/register', (req, res) => {
-  // add the logic here
+  const fname = req.body.fname;
+  const lname = req.body.lname;
+  const username = req.body.username;
+  const email = req.body.email;
+  const contact = req.body.contact;
+  const password = req.body.pass;
+  const address = req.body.address;
+  const role = 'user';
+  const id = uuid();
+  const user = { id, fname, lname, username, email, contact, password, address, role };
+  data.push(user);
+  fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+  res.statusCode = 200;
+  res.json({message: "User added successfully"});
+  
 });
 
 app.get('/users', (req, res) => {

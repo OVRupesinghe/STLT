@@ -33,9 +33,6 @@ app.get('/users', async (req, res) => {
   }
 });
 
-app.post('/register', (req, res) => {
-});
-
 app.post('/login', async (req, res) => {
   const { username, pass } = req.body;
   try {
@@ -49,7 +46,6 @@ app.post('/login', async (req, res) => {
           pass
         });
         let intermediaData = await intermediaResponse.data;
-        console.log(intermediaData);
         res.json(intermediaData);
       } catch (error) {
         res.statusCode = 401;
@@ -64,6 +60,33 @@ app.post('/login', async (req, res) => {
     console.log(error);
   }
 });
+
+app.post('/register', async (req, res) => {
+  const user_data = req.body;
+  try {
+    let response = await axios.get(`http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`);
+    let data = await response.data;
+ 
+    if (data) {
+      try {
+        let intermediaResponse = await axios.post(`http://${data.serviceInfo.host}:${data.serviceInfo.port}/register`,user_data);
+        let intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.statusCode = 401;
+        res.json(error.response.data);
+      }
+      
+    } else {
+      res.statusCode = 500;
+      res.json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+
 
 app.get('/checkusername/:username', async (req, res) => {
 
@@ -128,6 +151,32 @@ app.get('/checkphone/:phone', async (req, res) => {
     if (data) {
       try {
         let intermediaResponse = await axios.get(`http://${data.serviceInfo.host}:${data.serviceInfo.port}/checkphone/${phone}`);
+        let intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.statusCode = 401;
+        res.json(error.response.data);
+      }
+      
+    } else {
+      res.statusCode = 500;
+      res.json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.get('/checkphoneValidity/:phone', async (req, res) => {
+
+  const phone = req.params.phone;
+  try {
+    let response = await axios.get(`http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`);
+    let data = await response.data;
+ 
+    if (data) {
+      try {
+        let intermediaResponse = await axios.get(`http://${data.serviceInfo.host}:${data.serviceInfo.port}/checkphoneValidity/${phone}`);
         let intermediaData = await intermediaResponse.data;
         res.json(intermediaData);
       } catch (error) {

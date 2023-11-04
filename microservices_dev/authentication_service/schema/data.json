@@ -9,5 +9,16 @@
     "role": "user",
     "email": "sr@gmail.com",
     "phone": "1234567890"
+  },
+  {
+    "id": "899a1614-f293-4d0b-93c8-bb50a2d6c832",
+    "fname": "chamath",
+    "lname": "Gunasinghe",
+    "username": "user2",
+    "email": "or@gmail.com",
+    "contact": "0710944927",
+    "password": "Kamikaze123@",
+    "address": "No.88, battiyawatta road, Thumbowila, Piliyandala",
+    "role": "user"
   }
 ]
