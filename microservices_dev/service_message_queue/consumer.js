@@ -21,12 +21,16 @@ class Consumer {
    * reach the consumer
   */
   async setup(exchangeName, typeOfExchange, queueName, routingKey) {
-    if (this.connection == undefined && this.channel == undefined && this.queue == undefined) {
-      this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
-      this.channel = await this.connection.createChannel();
-      await this.channel.assertExchange(exchangeName, typeOfExchange);
-      this.queue = await channel.assertQueue(queueName);
-      await this.channel.bindQueue(this.queue, exchangeName, routingKey);
+    try {
+      if (this.connection == undefined && this.channel == undefined && this.queue == undefined) {
+        this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
+        this.channel = await this.connection.createChannel();
+        await this.channel.assertExchange(exchangeName, typeOfExchange);
+        this.queue = await this.channel.assertQueue(queueName);
+        await this.channel.bindQueue(this.queue, exchangeName, routingKey);
+      }
+    } catch (error) {
+      console.error(error);
     }
   }
 
