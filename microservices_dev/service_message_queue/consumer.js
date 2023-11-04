@@ -7,18 +7,6 @@ class Consumer {
   channel = undefined;
   queue = undefined;
 
-  /**
-   * Setup function is responsible for creating and initializing the consumer
-   * attributes required to function.
-   * @var exchangeName - indicates the exchange that the consumer want to connect
-   * @var typeOfExchange - consumer should mention the type of exchange that they will join
-   * @var queueName - the name that should be given to the queue
-   * @var routingKey - this will be used to route the incoming message to the proper consumer
-   *
-   * Connect to the proper producer's exchange otherwise you want receive the data.
-   * The routingKey is used to mention the route that a message should be sent in order to
-   * reach the consumer
-   */
   async setup(exchangeName, typeOfExchange, queueName, routingKey) {
     try {
       if (
@@ -56,8 +44,9 @@ class Consumer {
   async consume(callback) {
     if (this.connection && this.channel && this.queue) {
       await this.channel.consume(this.queue.queue, (msg) => {
-        callback(JSON.parse(msg.content.toString()));
-        this.channel.ack(msg);
+        JSON.parse(msg.content.toString());
+        callback(msg);
+        this.channel.ack(msg); // acknowledge the message was received
       });
     }
   }
