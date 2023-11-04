@@ -9,12 +9,9 @@ const cors = require('cors');
 
 app.use(express.json());
 
-
-
 app.post('/login', (req, res) => {
  
   const { username, pass } = req.body;
-  
 
   for (var user of users) {
     if (user.username === username && user.password === pass) {
