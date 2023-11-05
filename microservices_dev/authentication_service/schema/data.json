@@ -1,17 +1,28 @@
 [
   {
-    "id": 1,
-    "name": "Bobby Tarantino",
-    "address": "England"
+    "id": "899a1614-f293-4d0b-93c8-bb50a2d6c832",
+    "fname": "chamath",
+    "lname": "Gunasinghe",
+    "username": "user2",
+    "email": "oshada.rupasinghe@gmail.com",
+    "phone": "0710944927",
+    "password": "Kamikaze123@",
+    "address": "No.88, battiyawatta road, Thumbowila, Piliyandala",
+    "role": "user",
+    "refreshToken": "",
+    "resetToken": "999cefb2-574f-49da-8eba-4f75287709bb"
   },
   {
-    "id": 2,
-    "name": "Robertson",
-    "address": "England"
-  },
-  {
-    "id": 3,
-    "name": "Sampumal",
-    "address": "Sri Lanka"
+    "id": "5e7f99f8-3515-4fac-a2eb-39b44a6001e8",
+    "fname": "chamath",
+    "lname": "fgfg",
+    "username": "SuhadaKOKA",
+    "email": "ou@gmail.com",
+    "phone": "0710944928",
+    "password": "Kamikaze123@",
+    "address": "88, Battiyawatta road, Thumbowila, Piliyandala",
+    "role": "user",
+    "refreshToken": "",
+    "resetToken": ""
   }
 ]
