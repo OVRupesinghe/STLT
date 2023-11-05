@@ -11,36 +11,6 @@ const Producer = require("../service_message_queue/producer");
 
 app.use(express.json());
 
-// Create an instance of the Producer class
-const producer = new Producer();
-const consumer = new Consumer();
-
-// Set up the producer
-async function setupProducer() {
-    try {
-      await producer.setup();
-      console.log("Producer is connected and channel is created.");
-    } catch (error) {
-      console.error("Error setting up producer:", error);
-    }
-  }
-  setupProducer();
-  
-  // Set up the consumer
-  async function setupConsumer() {
-    try {
-      await consumer.setup("ROUTER", "direct", "PROVISION_REPLY", "PROVISION_REPLY");
-      const handleMessage = (message) => {
-        console.log(JSON.parse(message.content.toString()));
-      };
-      consumer.consume(handleMessage);
-    } catch (error) {
-      console.error("Error setting up consumer:", error);
-    }
-  }
-  setupConsumer();
-
-
 //endpoint to get all the services provided by the provision system REST API
 app.get('/services', async (req, res) => {
     try {
@@ -112,6 +82,8 @@ app.post('/services/:id/activate', async (req, res) => {
         // console.log(response?.data);
         if(response.status == 200){
             //TODO:: add payment service call here
+            //?we don't need to process the payment when the service is activated, we can do it at the end of the month
+            //?we just need to send an notification to the user that the service has been activated
 
             //return the services
             res.statusCode = 200;
@@ -122,8 +94,11 @@ app.post('/services/:id/activate', async (req, res) => {
         }
         else if(response.status == 201)
             {
-                // TODO:: add the notification service call here
+                // TODO:: Need to send user email
+                //?we currently don't have a user email, so we will send it to a temp email
+                //?we need to store the user email in the database or else ...
                 // send a message to the notification service to send an email to the user
+                const {producer, consumer} =prepareForSendNotification();
                 const message = {
                     type: "EMAIL",
                     message: `Your service '${response?.data?.serviceName?? ''}' has been activated`,
@@ -238,5 +213,120 @@ app.listen(process.env.PORT, () => {
     console.log(`provision microservice Listening on port http://localhost:${process.env.PORT}`);
 });
 
+
+
+const prepareForSendNotification = () => {
+    // Create an instance of the Producer class
+    const producer = new Producer();
+    const consumer = new Consumer();
+
+    // Set up the producer
+    async function setupProducer() {
+        try {
+        await producer.setup();
+        console.log("Producer is connected and channel is created.");
+        } catch (error) {
+        console.error("Error setting up producer:", error);
+        }
+    }
+    setupProducer();
+    
+    // Set up the consumer
+    async function setupConsumer() {
+        try {
+        await consumer.setup("ROUTER", "direct", "PROVISION_REPLY", "PROVISION_REPLY");
+        const handleMessage = (message) => {
+            console.log(JSON.parse(message.content.toString()));
+        };
+        consumer.consume(handleMessage);
+        } catch (error) {
+        console.error("Error setting up consumer:", error);
+        }
+    }
+    setupConsumer();
+
+    return { producer, consumer };
+}
+
+//endpoint to get all the users who have activated services
+const prepareForSendServices = () => {
+    // Create an instance of the Consumer class
+    const consumer = new Consumer();
+    const producer = new Producer();
+
+    // Set up the consumer
+    async function setupConsumer() {
+    try {
+        // Set up the consumer to listen to the same exchange and routing key
+        await consumer.setup("ROUTER", "direct", "SERVICES", "SERVICES");
+        // Define a callback function to handle incoming messages
+        // Here we only need replyTo and correlationId from the message properties
+        //then all the services will be sent to the billing system
+        const handleMessage = async(message) => {
+            const msg = JSON.parse(message.content.toString());
+            const { correlationId, replyTo } = message.properties;
+            console.log("recieved message options :",message.properties);
+            // console.log(msg);
+
+            //return the services
+            try {
+                console.log('sending all the services');
+                
+                //call the provision system REST API to get all the services
+                const services = await axios.get(process.env.PROVISION_SYSTEM_URL + process.env.PROVISION_SYSTEM_PORT + '/services');
+                
+                //return the services
+                producer.produceToQueue(
+                    "ROUTER",
+                    "direct",
+                    replyTo,
+                    {
+                        statusCode: 200,
+                        data: services?.data
+                    },
+                    {
+                      correlationId: correlationId,
+                    }
+                );
+                console.log("response sent to billing system");
+            } catch (error) {
+                console.error(error);
+
+                producer.produceToQueue(
+                    "ROUTER",
+                    "direct",
+                    replyTo,
+                    {
+                        statusCode: error.response?.status || 500,
+                        message: error?.response?.data?.message
+                    },
+                    {
+                      correlationId: correlationId,
+                    }
+                );
+            }
+        };
+        consumer.consume(handleMessage);
+    } catch (error) {
+        console.error("Error setting up consumer:", error);
+    }
+    }
+
+    async function setupProducer() {
+    try {
+        // Set up the consumer to listen to the same exchange and routing key
+        await producer.setup();
+    } catch (error) {
+        console.error("Error setting up consumer:", error);
+    }
+    }
+
+    setupProducer();
+    setupConsumer();
+
+    return { producer, consumer };
+}
+
+const {producer,consumer} = prepareForSendServices();
 
 

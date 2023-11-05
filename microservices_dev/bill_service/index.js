@@ -136,37 +136,97 @@ app.post('/bills/:id/cancel', async (req, res) => {
 
 
 //month start cron job to generate bills
-app.post('/bills/generate', (req, res) => {
+app.post('/bills/generate', async(req, res) => {
     console.log('generating bills for the month');
     try {
-        //TODO:: call the provision system service to get all the users who have activated services
 
+        //create consumer
+        const consumer = new Consumer();
 
-        //Step 1 : get all the services
-        const services = []; //assign the response from the provision system service call to this variable
+        await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
+        const handleMessage = (message) => {
+            console.log("recieved services data : ",JSON.parse(message.content.toString()));
+            // console.log(message.properties);
 
-        //Step 2 : get all the activated users for each service
-        for (service of services) {
-            const activatedUsers = []; //assign the response from the provision system service call to this variable
+            const response = JSON.parse(message.content.toString());
 
-            //Step 3 : calculate the bill for each user
-            for (user of activatedUsers) {
-                const billData = {
-                    userId: user.id,
-                    serviceId: service.id,
-                    amount: service.price
-                };
-                //Step 4 : create the bill
-                createBill(billData);
-
-                //TODO:: send message to notification service to notify the user about the bill
+            // step 1 : check if the message is successful
+            if(response.statusCode != 200){
+                console.log("Error getting services from provision system");
+                res.statusCode = response.statusCode;
+                res.json({ "message": "Internal server error" });
+                return;
             }
-        }
+            else if(response.statusCode == 200)
+            {
+                // strp 2 : get the services
+                console.log("Success getting services from provision service");
+                const services = response.data; //assign the response from the provision system service call to this variable
+
+                //Step 3 : get all the activated users for each service
+                let users = [];
+                for (service of services) {
+                    const activatedUsers = service?.users; //assign the response from the provision system service call to this variable
+                    console.log("activated users : ", activatedUsers);
+                    //Step 3 : calculate the bill for each user
+                    for (user of activatedUsers) {
+                        const billData = {
+                            userId: user?.id,
+                            serviceId: service?.id,
+                            amount: service?.price
+                        };
+                        //Step 4 : create the bill
+                        createBill(billData);
+
+                        //store the user in the users array
+                        if(users.find(u => u.id == user.id)){
+                            users = users.map((u) => {
+                                if(u.id == user.id){
+                                    u.amount += service?.price;
+                                }
+                                return u;
+                            });
+                        }
+                        else{
+                            users.push({...user, amount: service?.price});
+                        }
+                    }
+                }
+
+                //Step 5 : send message to notification service to notify the user about the bill      
+                for(user of users){
+                    console.log("sending message to notification service to notify the user about the bill : ", user?.id , " : ", user?.amount);
+                    //TODO:: send message to notification service to notify the user about the bill
+                }
+
+                res.statusCode = 200;
+                res.json({ "message": "Success generating bills" });
+            }
+
+        };
+        consumer.consume(handleMessage);
+
+        const {producer} = prepareForGetServices();
+
+        //just a request to the provision system to get all the services
+        //reply will be sent to the BILLING_SERVICES_REPLY queue through the consumer   ^^^^ UP
+        console.log("Sending request to get all the services");
+        producer.produceToQueue(
+            "ROUTER",
+            "direct",
+            "SERVICES",
+            { time: new Date().getTime() },
+            {
+            replyTo: "BILLING_SERVICES_REPLY",
+            correlationId: uuid(),
+            }
+        );
 
 
     }
-    catch (err) {
-        console.error('Error writing file', err);
+    catch (error) {
+        console.error("Error setting up consumer:", error);
+        // console.error('Error writing file', error);
         res.json({ message: "Internal server error occurred" });
     }
 });
@@ -194,3 +254,23 @@ const createBill = (billData) => {
 app.listen(process.env.PORT, () => {
     console.log(`Billing microservice Server running at port ${process.env.PORT}`);
 });
+
+
+const prepareForGetServices = ()=>{
+    // Create an instance of the Producer class
+    const producer = new Producer();
+    const consumer = new Consumer();
+
+    // Set up the producer
+    async function setupProducer() {
+    try {
+        await producer.setup();
+        console.log("Producer is connected and channel is created.");
+    } catch (error) {
+        console.error("Error setting up producer:", error);
+    }
+    }
+    setupProducer();
+
+    return {producer};
+}
