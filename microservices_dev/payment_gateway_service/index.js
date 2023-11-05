@@ -4,6 +4,7 @@ require('dotenv').config();
 const data = require('./schema/data.json'); //
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
+const axios = require('axios');
 
 app.use(express.json());
 
@@ -15,7 +16,7 @@ app.post('/payment/tokenize', async (req, res) => {
         console.log('tokenizing the credit card information');
 
         //call the payment gateway REST API to tokenize the credit card information
-        const token = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/tokenize', req.body);
+        const token = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/tokenize', req.body);
 
         //return the token
         res.statusCode = 200;
@@ -33,7 +34,7 @@ app.post('/payment/process', async (req, res) => {
         console.log('processing the payment');
 
         //call the payment gateway REST API to process the payment
-        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/', req.body);
+        const payment = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/', req.body);
 
         if(payment.data.status){
             //create the payment in the database (in this case we will use a json file)
@@ -68,27 +69,25 @@ app.post('/payment/:id/refund', async (req, res) => {
         console.log('refunding the payment with id: ' + req.params.id);
 
         //call the payment gateway REST API to refund the payment
-        const payment = await axios.post(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id + '/refund', req.body);
+        const response = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id + '/refund', req.body);
 
-        if(payment.data.status){
+        const payment = response.data;
+        console.log(payment);
+        if(payment.status){
             //update the payment in the database (in this case we will use a json file)
-            for (payment of data) {
-                if (payment.id == req.params.id) {
-                    payment.status = payment.data.status;
-                    fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
-                    console.log('Data written to file');
-                    break;
-                }
+            if (payment.id == req.params.id) {
+                fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+                console.log('Data written to file');
             }
-
+            
             //return the payment
             res.statusCode = 200;
-            res.json(payment.data);
+            res.json(payment);
         }
 
         //return the payment
         res.statusCode = 200;
-        res.json(payment.data);
+        res.json(payment);
     } catch (error) {
         console.error(error);
         res.statusCode = error.response.status;
@@ -102,23 +101,20 @@ app.get('/payment/:id', async (req, res) => {
         console.log('getting the payment details with id: ' + req.params.id);
 
         //call the payment gateway REST API to get the payment details
-        const payment = await axios.get(env.process.PAYMENT_GATEWAY_URL + env.process.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id);
+        const response = await axios.get(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id);
+        const payment = response.data;
 
         //?do we have to send the data in the schema/data.json file? or is it done by the payment gateway?
-
-        let returnPayment = payment.data;
-
         //concatenate the data from the database and the payment gateway
-        for (payment of data) {
-            if (payment.id == req.params.id) {
-                returnPayment = {...returnPayment, ...payment};
-                break;
-            }
+
+        if (payment.id == req.params.id) {
+            //return the payment
+            res.statusCode = 200;
+            res.json(payment);
+            return;
         }
 
-        //return the payment
-        res.statusCode = 200;
-        res.json(payment.data);
+        
     } catch (error) {
         console.error(error);
         res.statusCode = error.response.status;

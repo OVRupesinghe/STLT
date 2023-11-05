@@ -5,6 +5,7 @@ const data = require('./data.json');
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
 
+app.use(express.json());
 
 //all the mock REST API endpoints for the payment gateway service
 
@@ -36,7 +37,7 @@ app.post('/payments', (req, res) => {
     console.log('creating a new payment');
     let paymentData = req.body;
     try {
-        if(processToken(paymentData.token)){   //a dummy function lol
+        if(processToken(paymentData.token)){   //a dummy function lol :D
             const newPaymentInfo = {
                 id: uuid(),
                 amount: paymentData.amount,
@@ -46,7 +47,7 @@ app.post('/payments', (req, res) => {
 
             data.push(newPaymentInfo);
 
-            fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+            fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
             console.log('Data written to file');
             res.statusCode = 201;
             res.json(newPaymentInfo);
@@ -88,7 +89,7 @@ app.post('/payments/:id/refund', (req, res) => {
     for (payment of data) {
         if (payment.id == paymentId) {
             payment.status = 'refunded';
-            fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+            fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
             console.log('Data written to file');
             res.statusCode = 200;
             res.json(payment);
@@ -103,7 +104,7 @@ app.post('/payments/:id/refund', (req, res) => {
 const crypto = require('crypto');
 
 const tokenize = (cardNum, expDate, cvv) => {
-    const secret = process.env.TOKEN_SECRET;
+    const secret = Buffer.from(process.env.TOKEN_SECRET,'hex');
     const id = uuid();
     const payload = JSON.stringify({ cardNum, expDate, cvv, id });  // {"cardNum":"1234567890123456","expDate":"12/2022","cvv":"123", "id": "1234-1234-1234-1234"}
     const algorithm = 'aes-256-cbc';
@@ -116,7 +117,7 @@ const tokenize = (cardNum, expDate, cvv) => {
 };
 
 const untokenize = (token) => {
-    const secret = process.env.TOKEN_SECRET;
+    const secret = Buffer.from(process.env.TOKEN_SECRET,'hex');
     const [iv, encrypted] = token.split('.');   // iv is the initialization vector, a random string used to encrypt the data (hex, and the encrypted data)
     const decipher = crypto.createDecipheriv('aes-256-cbc', secret, Buffer.from(iv, 'hex'));    
     let decrypted = decipher.update(encrypted, 'hex', 'utf8');
@@ -132,5 +133,5 @@ const processToken = (token) => {
 
 //start the server
 app.listen(process.env.PORT, () => {
-    console.log('Payment gateway service started on port ' + process.env.PORT);
+    console.log('Payment gateway external service started on port ' + process.env.PORT);
 });
