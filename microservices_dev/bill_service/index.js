@@ -8,7 +8,7 @@ const {v4: uuid } = require('uuid');
 app.use(express.json());
 
 //get bills of a user
-app.get('/bills/:userId', (req, res) => {
+app.get('/bills/user/:userId', (req, res) => {
     console.log('sending all the bills of a user');
     const userId = req.params.userId;
     const bills = [];
@@ -32,10 +32,10 @@ app.get('/bills/:userId', (req, res) => {
 
 //get a specific bill
 app.get('/bills/:id', (req, res) => {
-    console.log('sending the bill with id: ' + req.params.id);
     const billId = req.params.id;
 
     for (bill of data) {
+        console.log(bill.id + ' , ' + billId);
         if (bill.id == billId) {
             res.statusCode = 200;
             res.json(bill);
@@ -88,7 +88,7 @@ app.post('/bills/:id/pay', async (req, res) => {
 
             //return the payment
             res.statusCode = 200;
-            res.json(payment.data);
+            res.json("Payment successful");
         }
     } catch (error) {
         console.error(error);
@@ -103,11 +103,14 @@ app.post('/bills/:id/cancel', async (req, res) => {
     try {
         console.log('cancelling the bill with id: ' + req.params.id);
 
-        if(payment.data.status){
+        //TODO:: send message to the payment gateway service to cancel the payment and get the payment status
+        const payment = {data: {status: 'cancelled'}};
+
+        if(payment?.data?.status){
             //update the bill in the database (in this case we will use a json file)
             for (bill of data) {
                 if (bill.id == req.params.id) {
-                    bill.status = payment.data.status;
+                    bill.status = payment?.data?.status;
                     fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
                     console.log('Data written to file');
                     break;
@@ -116,7 +119,7 @@ app.post('/bills/:id/cancel', async (req, res) => {
 
             //return the payment
             res.statusCode = 200;
-            res.json(payment.data);
+            res.json("Payment cancelled");
         }
     } catch (error) {
         console.error(error);

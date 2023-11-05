@@ -148,5 +148,5 @@ app.post('/services/:id/deactivate', (req, res) => {
 
 //start the server
 app.listen(process.env.PORT, () => {
-    console.log('Provision system service started on port ' + process.env.PORT);
+    console.log('Provision external system service started on port ' + process.env.PORT);
 });

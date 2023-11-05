@@ -1,0 +1,26 @@
+[
+  {
+    "id": "1129c783-6ed2-44a0-a5f9-b1013c066d31",
+    "userId": 1,
+    "serviceId": 1,
+    "amount": 1000,
+    "when": "2019-01-01",
+    "status": "cancelled"
+  },
+  {
+    "id": "9210c871-83e9-424a-af45-f6bfffdc2bb5",
+    "userId": 1,
+    "serviceId": 1,
+    "amount": 1000,
+    "when": "2019-01-01",
+    "status": "pending"
+  },
+  {
+    "id": "d3d121e5-b027-4545-bf1c-02608f8c80d5",
+    "userId": 2,
+    "serviceId": 1,
+    "amount": 2000,
+    "when": "2023-11-05T01:38:05.693Z",
+    "status": "pending"
+  }
+]
