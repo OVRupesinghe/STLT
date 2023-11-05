@@ -1,46 +1,73 @@
-const amqp = require('amqplib');
-require('dotenv').config();
+const amqp = require("amqplib");
+require("dotenv").config();
 
 class Producer {
-    connection;
-    channel;
+  connection;
+  channel;
 
-    /** 
-     * The setup function will establish the connection and will create the channel
-     * that is required to connect to a queue
-     */
-    async setup() {
-        if (this.connection == undefined && this.channel == undefined) {
-            this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
-            this.channel = await this.connection.createChannel();
-        }
+  /**
+   * The setup function will establish the connection and will create the channel
+   * that is required to connect to a queue
+   */
+  async setup() {
+    if (this.connection == undefined && this.channel == undefined) {
+      this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
+      this.channel = await this.connection.createChannel();
     }
+  }
 
-    /** 
-       * produce function is responsible for routing messages to the consumers, that are connected to the queues
-       * attributes required to function.
-       * @var exchangeName - indicates the exchange that the producer want to connect
-       * @var typeOfExchange - producer should mention the type of exchange the producer will join
-       * @var routingKey - this will be used to route the incoming message to the proper consumer
-       * 
-       * Connect to the proper consumer's exchange otherwise they want receive the data.
-       * The routingKey is used to mention the route that a message should be sent in order to
-       * reach the consumer
-      */
-    async produce(exchangeName, typeOfExchange, routingKey, msg) {
-        if (this.connection && this.channel) {
-            await this.channel.assertExchange(exchangeName, typeOfExchange);
-            msg.routeDateTimeStamp = new Date(); // added this field for testing
-            await this.channel.publish(
-                exchangeName,
-                routingKey,
-                Buffer.from(
-                    JSON.stringify(msg)
-                )
-            );
-            console.log(`The msg ${msg} is routed to ${routingKey} from ${exchangeName} exchange`);
-        }
+  /**
+   *
+   * @param {String} exchangeName the name of the exchange the client wants to connect to
+   * @param {String} typeOfExchange the type of the exchange the client wants to connect to
+   * @param {String} queueName the name of the queue the message should be send to
+   * @param {Object} msg the actual message to be sent
+   * @param {Object} options the object which defines the options related to the request-reply model
+   */
+  async produceToQueue(exchangeName, typeOfExchange, queueName, msg, options) {
+    if (this.connection == undefined && this.channel == undefined) {
+      this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
+      this.channel = await this.connection.createChannel();
     }
+    if (this.connection && this.channel) {
+      await this.channel.assertExchange(exchangeName, typeOfExchange);
+      msg.routeDateTimeStamp = new Date(); // added this field for testing
+      // sending the message to the queue
+      this.channel.sendToQueue(
+        queueName,
+        Buffer.from(JSON.stringify(msg)),
+        options
+      );
+      console.log(
+        `The message is routed to ${queueName} from ${exchangeName} exchange`
+      );
+    }
+  }
+
+  async produceToExchangeWithRoute(
+    exchangeName,
+    typeOfExchange,
+    routingKey,
+    msg
+  ) {
+    if (this.connection == undefined && this.channel == undefined) {
+      this.connection = await amqp.connect(process.env.MESSAGING_SERVER_URL);
+      this.channel = await this.connection.createChannel();
+    }
+    if (this.connection && this.channel) {
+      await this.channel.assertExchange(exchangeName, typeOfExchange);
+      msg.routeDateTimeStamp = new Date(); // added this field for testing
+      // sending the message to the queue
+      await this.channel.publish(
+        exchangeName,
+        routingKey,
+        Buffer.from(JSON.stringify(msg))
+      );
+      console.log(
+        `The message is routed to ${queueName} from ${exchangeName} exchange`
+      );
+    }
+  }
 }
 
 module.exports = Producer;
