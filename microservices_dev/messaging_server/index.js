@@ -1,9 +1,9 @@
 const Consumer = require("../service_message_queue/consumer");
 const Producer = require("../service_message_queue/producer");
 const { v4: UUID } = require("uuid");
-const bodyParser = require("body-parser");
 const express = require("express");
 const app = express();
+require("dotenv").config();
 
 app.use(express.json());
 
