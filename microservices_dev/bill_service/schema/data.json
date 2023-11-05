@@ -1,12 +1,12 @@
 [
   {
     "id": "c254a90f-21d9-4ce5-802a-ddd9c6992900",
-    "paymentId": "",
+    "paymentId": "5bcf6064-fdd6-4578-8aaa-7fb125979b49",
     "userId": "899a1614-f293-4d0b-93c8-bb50a2d6c832",
     "serviceId": 1,
     "amount": 100,
     "when": "2023-11-05T14:25:31.966Z",
-    "status": "pending"
+    "status": "paid"
   },
   {
     "id": "b1ec8efe-7c33-4c0b-acd7-4d5785869c38",

@@ -16,5 +16,11 @@
     "host": "localhost",
     "port": 1555,
     "lastHeartBeat": 0
+  },
+  {
+    "name": "provisionService",
+    "host": "localhost",
+    "port": 3555,
+    "lastHeartBeat": 0
   }
 ]

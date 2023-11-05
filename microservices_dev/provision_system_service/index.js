@@ -31,15 +31,15 @@ app.get('/services', async (req, res) => {
 });
 
 //endpoint to get all the services provided by the provision system REST API with the acitvation status of the user
-app.get('/services/user/:id', async (req, res) => {
+app.get('/services/user/:userId', async (req, res) => {
     try {
-        console.log('sending all the services with activation status of the user with id: ' + req.params.id);
+        console.log('sending all the services with activation status of the user with id: ' + req.params.userId);
         
         //call the provision system REST API to get all the services
         const services = await axios.get(process.env.PROVISION_SYSTEM_URL + process.env.PROVISION_SYSTEM_PORT + '/services');
 
         const response = services?.data?.map(service => {
-            return { id:service.id, name:service.name, description:service.description, price:service.price, status:service.users.find(user => user.id == req.params.id)?.status || 'inactive' }
+            return { id:service.id, name:service.name, description:service.description, price:service.price, status:service.users.find(user => user.id == req.params.userId)?.status || 'inactive' }
         });
 
         //return the services
@@ -81,6 +81,8 @@ app.post('/services/:id/activate', async (req, res) => {
         //call the provision system REST API to activate the service
         const response = await axios.post(process.env.PROVISION_SYSTEM_URL + process.env.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
         // console.log(response?.data);
+
+
         if(response.status == 200){
 
             //return the services
@@ -92,10 +94,44 @@ app.post('/services/:id/activate', async (req, res) => {
         }
         else if(response.status == 201)
             {
-                // TODO:: Need to send user email
-                //?we currently don't have a user email, so we will send it to a temp email
-                //?we need to store the user email in the database or else ...
-                // send a message to the notification service to send an email to the user
+                for (service of data) {
+                    if (service.id == req.params.id) {
+            
+                        // console.log(service.users.find(user => user.id == req.body.userId).status);
+            
+                        if(service.users.filter(user => user.id == req.body.userId).length > 0){ 
+                            
+                            let user = service.users.find(user => user.id == req.body.userId)
+                            if(user.status == 'active'){
+                                res.statusCode = 200;
+                                console.log('Service already activated');
+                                res.json({ message: "Service already activated" });
+                                return;
+                            }
+                            else{
+                                user.status = 'active';
+                            }                 
+                        } else {
+                            service.users.push({
+                                id: req.body.userId,
+                                status: 'active'
+                            });
+                        }
+                        
+                        try {        
+                            fs.writeFileSync('./schema/service_users.json', JSON.stringify(data, null, 2));
+                            console.log('Data written to file');
+                            res.statusCode = 201;   //activated
+                            res.json({ message: "Service activated successfully", serviceName: service.name});
+                            return;        
+                        } catch (err) {
+                            console.error('Error writing file', err);
+                            res.statusCode = 500;
+                            res.json({ message: "Internal server error occurred" });
+                            return;
+                        }
+                    }
+                }
                 const {producer, consumer} =prepareForSendNotification();
                 const message = {
                     type: "EMAIL",
@@ -152,6 +188,39 @@ app.post('/services/:id/deactivate', async (req, res) => {
         }
         else if(response.status == 204)
             {
+                for (service of data) {
+                    if (service.id == req.params.id) {
+            
+                        // console.log(service.users.find(user => user.id == req.body.userId).status);
+            
+                        if(service.users.filter(user => user.id == req.body.userId).length > 0){ 
+                            
+                            let user = service.users.find(user => user.id == req.body.userId)
+                            if(user.status == 'inactive'){
+                                res.statusCode = 200;
+                                console.log('Service already activated');
+                                res.json({ message: "Service already activated" });
+                                return;
+                            }
+                            else{
+                                user.status = 'inactive';
+                            }                 
+                        } 
+                        
+                        try {        
+                            fs.writeFileSync('./schema/service_users.json', JSON.stringify(data, null, 2));
+                            console.log('Data written to file');
+                            res.statusCode = 201;   //activated
+                            res.json({ message: "Service activated successfully", serviceName: service.name});
+                            return;        
+                        } catch (err) {
+                            console.error('Error writing file', err);
+                            res.statusCode = 500;
+                            res.json({ message: "Internal server error occurred" });
+                            return;
+                        }
+                    }
+                }
                 res.statusCode = 200;
                 res.json({
                     message: 'Service deactivated successfully'

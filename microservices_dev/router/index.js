@@ -360,6 +360,147 @@ app.get("/bills/user/:userId", async (req, res) => {
   checkBilling(req, res, "bills/user", req.params.userId);
 });
 
+async function checkProvision(req, res, endpoint, params) {
+  const dataParam = params;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/provisionService`
+    );
+    const data = await response.data;
+
+    if (data) {
+      try {
+        const intermediaResponse = await axios.get(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/${endpoint}/${dataParam}`
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+app.get("/services/user/:userId", async (req, res) => {
+  checkProvision(req, res, "services/user", req.params.userId);
+});
+
+app.post("/services/:id/activate", async (req, res) => {
+  const dataParam = req.params.id;
+  const userId = req.body.userId;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/provisionService`
+    );
+    const data = await response.data;
+    
+    if (data) {
+      try {
+        const intermediaResponse = await axios.post(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/services/${dataParam}/activate`,
+          { userId }
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.post("/services/:id/deactivate", async (req, res) => {
+  const dataParam = req.params.id;
+  const userId = req.body.userId;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/provisionService`
+    );
+    const data = await response.data;
+    
+    if (data) {
+      try {
+        const intermediaResponse = await axios.post(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/services/${dataParam}/deactivate`,
+          { userId }
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.get('/services/:id', async (req, res) => {
+  const dataParam = req.params.id;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/provisionService`
+    );
+    const data = await response.data;
+
+    if (data) {
+      try {
+        const intermediaResponse = await axios.get(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/services/${dataParam}`
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+})
+
+app.post('/bills/:id/pay', async (req, res) => {
+  const dataParam = req.params.id;
+  const userId = req.body.userId;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/billingService`
+    );
+    const data = await response.data;
+      
+    if (data) {
+      try {
+        const intermediaResponse = await axios.post(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/bills/${dataParam}/pay`,
+          { userId }
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+})
+
+
 app.listen(process.env.PORT, () => {
   console.log(
     "Router service started : ",
