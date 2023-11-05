@@ -98,15 +98,41 @@ app.post('/bills/:id/pay', async (req, res) => {
     try {
         console.log('paying the bill with id: ' + req.params.id);
 
+        //check if bill exists
+        let billExists = false;
+        data.forEach(bill => {
+            if(bill.id == req.params.id){
+                billExists = true;
+            }
+        });
+        if(!billExists){
+            res.statusCode = 404;
+            res.json({ message: "Bill cannot be found" });
+            return;
+        };
+
+
+        //check if the bill is already paid
+        for (bill of data) {
+            if (bill.id == req.params.id) {
+                if(bill.status == 'paid'){
+                    res.statusCode = 400;
+                    res.json({ message: "Bill is already paid" });
+                    return;
+                }
+            }
+        };
+
+
         //create consumer for get the payment status from the payment gateway sevice
         const consumer = new Consumer();
 
         // Set up the consumer to process the payment status
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
-        const handleMessage = (message) => {
+        const handleMessage = (channel,message) => {
 
             const response = JSON.parse(message.content.toString());
-
+            channel.ack(message); // acknowledge the message was received
             // step 1 : check if the message is successful
             if(response.statusCode != 200){
                 console.log("Error calling from payment gateway service");
@@ -120,11 +146,14 @@ app.post('/bills/:id/pay', async (req, res) => {
                 console.log("Excecuted process payment from payment gateway service");
                 const payment = response.data;
 
+                console.log(payment);
+
                 if(payment){
                     //update the bill in the database (in this case we will use a json file)
                     for (bill of data) {
                         if (bill.id == req.params.id) {
                             bill.status = 'paid';
+                            bill.paymentId = payment?.id;
                             fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
                             console.log('Data written to file');
                             break;
@@ -234,9 +263,10 @@ app.post('/bills/generate', async(req, res) => {
 
         // Set up the consumer to process the services data
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
-        const handleMessage = (message) => {
+        const handleMessage = (channel,message) => {
 
             const response = JSON.parse(message.content.toString());
+            channel.ack(message); // acknowledge the message was received
 
             // step 1 : check if the message is successful
             if(response.statusCode != 200){
@@ -308,8 +338,9 @@ app.post('/bills/generate', async(req, res) => {
                     );
                 }
                 console.log("Success sending notifications to the users");
-                res.statusCode = 200;
+                res.statusCode = 201;
                 res.json({ "message": "Success generating bills" });
+                return;
             }
 
         };
@@ -345,6 +376,7 @@ app.post('/bills/generate', async(req, res) => {
 const createBill = (billData) => {
     const newBillInfo = {
         id: uuid(),
+        paymentId: '',
         userId: billData.userId,
         serviceId: billData.serviceId,
         amount: billData.amount,
@@ -403,12 +435,13 @@ const prepareForSendNotification = () => {
     async function setupConsumer() {
         try {
         await consumer.setup("ROUTER", "direct", "BILLING_NOTIFICATION_REPLY", "BILLING_NOTIFICATION_REPLY");
-        const handleMessage = (message) => {
+        const handleMessage = (channel,message) => {
             console.log(JSON.parse(message.content.toString()));
+            channel.ack(message); // acknowledge the message was received
         };
         consumer.consume(handleMessage);
         } catch (error) {
-        console.error("Error setting up consumer:", error);
+            console.error("Error setting up consumer:", error);
         }
     }
     setupConsumer();

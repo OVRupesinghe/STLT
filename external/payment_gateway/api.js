@@ -39,7 +39,7 @@ app.post('/payments', (req, res) => {
     try {
         if(processToken(paymentData.token)){   //a dummy function lol :D
             const newPaymentInfo = {
-                id: uuid(),
+                id: req.body.paymentId,
                 amount: paymentData.amount,
                 when: new Date(),
                 status: 'success'

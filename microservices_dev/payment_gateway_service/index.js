@@ -39,13 +39,15 @@ const processPayment = async (req) => {
     try {
         console.log('processing the payment');
 
+        const paymentId = uuid();
+        req.body.paymentId = paymentId;
         //call the payment gateway REST API to process the payment
         const payment = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/', req.body);
 
         if(payment.data.status){
             //create the payment in the database (in this case we will use a json file)
             const paymentData = {
-                id: uuid(),
+                id: paymentId,
                 userId: req.body.userId,
                 serviceId: req.body.serviceId,
                 amount: req.body.amount,
@@ -152,7 +154,8 @@ const prepareForProcessPayment = () => {
     async function setupConsumer() {
         try {
             await consumer.setup("ROUTER", "direct", "PAYMENTS", "PAYMENTS");
-            const handleMessage = async(request) => {
+            const handleMessage = async(channel,request) => {
+                channel.ack(request); // acknowledge the message was received
 
                 // need to recieve the data from the message format:
                 /*
@@ -170,6 +173,7 @@ const prepareForProcessPayment = () => {
 
                 const req = JSON.parse(request.content.toString());
                 const { correlationId, replyTo } = request.properties;
+
 
                 //return the token from credit card data
                 let req1 = {body:{...req,userId:'',serviceId:'',amount:''}};

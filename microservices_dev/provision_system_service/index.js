@@ -8,6 +8,7 @@ const e = require('express');
 const axios = require('axios');
 const Consumer = require("../service_message_queue/consumer");
 const Producer = require("../service_message_queue/producer");
+const { channel } = require('diagnostics_channel');
 
 app.use(express.json());
 
@@ -235,7 +236,8 @@ const prepareForSendNotification = () => {
     async function setupConsumer() {
         try {
         await consumer.setup("ROUTER", "direct", "PROVISION_REPLY", "PROVISION_REPLY");
-        const handleMessage = (message) => {
+        const handleMessage = (channel,message) => {
+            channel.ack(message); // acknowledge the message was received
             console.log(JSON.parse(message.content.toString()));
         };
         consumer.consume(handleMessage);
@@ -262,8 +264,9 @@ const prepareForSendServices = () => {
         // Define a callback function to handle incoming messages
         // Here we only need replyTo and correlationId from the message properties
         //then all the services will be sent to the billing system
-        const handleMessage = async(message) => {
+        const handleMessage = async(channel,message) => {
             const msg = JSON.parse(message.content.toString());
+            channel.ack(message); // acknowledge the message was received
             const { correlationId, replyTo } = message.properties;
             console.log("recieved message options :",message.properties);
             // console.log(msg);
