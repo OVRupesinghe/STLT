@@ -1,5 +1,6 @@
 const Consumer = require("../service_message_queue/consumer"); // Import the Consumer class
 const Producer = require("../service_message_queue/producer");
+const { v4: uuid } = require("uuid");
 
 // Create an instance of the Consumer class
 const consumer = new Consumer();
@@ -21,43 +22,81 @@ async function setupConsumer() {
      *    "message": "CONTENT OF THE MESSAGE",
      * }
      */
-    const handleMessage = (channel,message) => {
+    const handleMessage = async(channel,message) => {
       
       const msg = JSON.parse(message.content.toString());
+      const { correlationId, replyTo } = message.properties;
       // console.log(message.properties);
       // console.log(msg);
       if (msg.type) {
         switch (msg.type) {
           case "EMAIL":
             {
-              // logic for sending an email for now will be console logging
-              // log the request and the state
-              const { correlationId, replyTo } = message.properties;
-              console.log({
-                type: "EMAIL",
-                message: msg.message,
-                from: msg.from,
-                to: msg.to,
-              });
-              producer.produceToQueue(
-                "ROUTER",
-                "direct",
-                replyTo,
-                {
-                  message: "STATUS: SUCCESS - 200",
-                  messageType: "EMAIL",
-                },
-                {
-                  correlationId: correlationId,
-                }
+
+              // Set up the consumer
+              const authenticateConsumer = new Consumer();
+              await authenticateConsumer.setup("ROUTER", "direct", "NOTIFICATION_AUTHENTICATE", "NOTIFICATION_AUTHENTICATE");
+              const handleMessage = (channel,authenticateMsg) => {
+                  channel.ack(authenticateMsg); // acknowledge the message was received
+                  // console.log(JSON.parse(authenticateMsg.content.toString()));
+                  
+                  const {statusCode, user, message} = JSON.parse(authenticateMsg.content.toString());
+
+                  let response = {};
+                  if(statusCode == 404) {
+                    console.log("User cannot be found");
+                    console.log("failed to send email");
+                    response = { statusCode:404, message: message };
+                  }
+                  else{
+                      // logic for sending an email for now will be console logging
+                      // log the request and the state
+                      console.log({
+                        type: "EMAIL",
+                        message: msg.message,
+                        from: msg.from,
+                        to: user.email,
+                      });
+                      response = {
+                        message: "STATUS: SUCCESS - 200",
+                        messageType: "EMAIL",
+                      }
+                  }
+
+                  producer.produceToQueue(
+                    "ROUTER",
+                    "direct",
+                    replyTo,
+                    {
+                      ...response
+                    },
+                    {
+                      correlationId: correlationId,
+                    }
+                  );
+              };
+              
+              authenticateConsumer.consume(handleMessage);
+
+              const getEmailProducer = prepareForGetEmail();
+
+              getEmailProducer.produceToQueue(
+                  "ROUTER",
+                  "direct",
+                  "AUTHENTICATE",
+                  { userId: msg.to, time: new Date().getTime() },
+                  {
+                    replyTo: "NOTIFICATION_AUTHENTICATE",
+                    correlationId: uuid(),
+                  }
               );
+
             }
             break;
           case "SMS":
             {
               // logic for sending an email for now will be console logging
               // log the request and the state
-              const { correlationId, replyTo } = message.properties;
               console.log({
                 type: "SMS",
                 message: msg.message,
@@ -79,7 +118,6 @@ async function setupConsumer() {
             }
             break;
           default: {
-            const { correlationId, replyTo } = message.properties;
             console.log("Invalid message type...");
             producer.produceToQueue(
               "ROUTER",
@@ -115,3 +153,23 @@ async function setupProducer() {
 
 setupProducer();
 setupConsumer();
+
+
+const prepareForGetEmail = () => {
+  // Create an instance of the Producer class
+  const producer = new Producer();
+  const consumer = new Consumer();
+
+  // Set up the producer
+  async function setupProducer() {
+      try {
+        await producer.setup();
+        console.log("Producer is connected and channel is created.");
+      } catch (error) {
+        console.error("Error setting up producer:", error);
+      }
+  }
+  setupProducer();
+
+  return producer;
+}
