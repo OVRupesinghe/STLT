@@ -140,12 +140,13 @@ app.post('/bills/generate', async(req, res) => {
     console.log('generating bills for the month');
     try {
 
-        //create consumer
+        //create consumer for get the services from the provision system
         const consumer = new Consumer();
 
+        // Set up the consumer to process the services data
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
         const handleMessage = (message) => {
-            console.log("recieved services data : ",JSON.parse(message.content.toString()));
+            // console.log("recieved services data : ",JSON.parse(message.content.toString()));
             // console.log(message.properties);
 
             const response = JSON.parse(message.content.toString());
@@ -167,7 +168,6 @@ app.post('/bills/generate', async(req, res) => {
                 let users = [];
                 for (service of services) {
                     const activatedUsers = service?.users; //assign the response from the provision system service call to this variable
-                    console.log("activated users : ", activatedUsers);
                     //Step 3 : calculate the bill for each user
                     for (user of activatedUsers) {
                         const billData = {
@@ -194,22 +194,45 @@ app.post('/bills/generate', async(req, res) => {
                 }
 
                 //Step 5 : send message to notification service to notify the user about the bill      
+                const {producer} = prepareForSendNotification();
                 for(user of users){
-                    console.log("sending message to notification service to notify the user about the bill : ", user?.id , " : ", user?.amount);
-                    //TODO:: send message to notification service to notify the user about the bill
-                }
+                    // console.log("sending message to notification service to notify the user about the bill : ", user?.id , " : ", user?.amount);
 
+
+                    // TODO:: Need to send user email
+                    //?we currently don't have a user email, so we will send it to a temp email
+                    //?we need to store the user email in the database or else ...
+                    // send a message to the notification service to send an email to the user
+                    const message = {
+                        type: "EMAIL",
+                        message: `You have a bill of RS.${user?.amount} settle on ${new Date().toLocaleString(undefined, { month: 'long' })} for the services you have activated }`,
+                        from: "billingService@gmail.com",
+                        to: "userTemp@gmial.com",
+                    };
+                    producer.produceToQueue(
+                        "ROUTER",
+                        "direct",
+                        "NOTICES",
+                        { ...message, time: new Date().getTime() },
+                        {
+                        replyTo: "BILLING_NOTIFICATION_REPLY",
+                        correlationId: uuid(),
+                        }
+                    );
+                }
+                console.log("Success sending notifications to the users");
                 res.statusCode = 200;
                 res.json({ "message": "Success generating bills" });
             }
 
         };
-        consumer.consume(handleMessage);
 
+        //consume the services data from the provision system
+        consumer.consume(handleMessage);
         const {producer} = prepareForGetServices();
 
         //just a request to the provision system to get all the services
-        //reply will be sent to the BILLING_SERVICES_REPLY queue through the consumer   ^^^^ UP
+        //reply will be sent to the BILLING_SERVICES_REPLY queue through the consumer   ^^^^ UP :D
         console.log("Sending request to get all the services");
         producer.produceToQueue(
             "ROUTER",
@@ -273,4 +296,37 @@ const prepareForGetServices = ()=>{
     setupProducer();
 
     return {producer};
+}
+
+const prepareForSendNotification = () => {
+    // Create an instance of the Producer class
+    const producer = new Producer();
+    const consumer = new Consumer();
+
+    // Set up the producer
+    async function setupProducer() {
+        try {
+        await producer.setup();
+        console.log("Producer is connected and channel is created.");
+        } catch (error) {
+        console.error("Error setting up producer:", error);
+        }
+    }
+    setupProducer();
+    
+    // Set up the consumer
+    async function setupConsumer() {
+        try {
+        await consumer.setup("ROUTER", "direct", "BILLING_NOTIFICATION_REPLY", "BILLING_NOTIFICATION_REPLY");
+        const handleMessage = (message) => {
+            console.log(JSON.parse(message.content.toString()));
+        };
+        consumer.consume(handleMessage);
+        } catch (error) {
+        console.error("Error setting up consumer:", error);
+        }
+    }
+    setupConsumer();
+
+    return { producer, consumer };
 }
