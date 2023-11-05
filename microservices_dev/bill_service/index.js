@@ -59,9 +59,29 @@ app.post('/bills', (req, res) => {
     try {
         const newBillInfo = createBill(billData);
 
-        //TODO:: send message to notification service to notify the user about the bill
+        const {producer} = prepareForSendNotification();
+        // console.log("sending message to notification service to notify the user about the bill : ", billData?.userId , " : ", billData?.amount);
 
         console.log('Data written to file');
+        //TODO:: Need to send user email
+        const message = {
+            type: "EMAIL",
+            message: `You have a bill of RS.${billData?.amount}`,
+            from: "billingService@gmail.com",
+            to: "userTemp@gmial.com",
+        };
+        producer.produceToQueue(
+            "ROUTER",
+            "direct",
+            "NOTICES",
+            { ...message, time: new Date().getTime()},
+            {
+            replyTo: "BILLING_NOTIFICATION_REPLY",
+            correlationId: uuid(),
+            }
+        );
+
+        console.log("Success sending notifications to the users");
         res.statusCode = 201;
         res.json(newBillInfo);
 
