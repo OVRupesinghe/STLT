@@ -101,8 +101,8 @@ wss.on("connection", (ws, req) => {
             );
         } else if (chatRooms.has(ws.chatRoomId)) {
             let chatRoom = chatRooms.get(ws.chatRoomId);
-            if (ws !== chatRoom.supervisor) chatRoom.supervisor.send(message);
-            else chatRoom.client.send(message);
+            if (ws !== chatRoom.supervisor) chatRoom.supervisor.send(message, { binary: false });
+            else chatRoom.client.send(message, { binary: false });
         } else if (availableSupervisors.includes(ws)) {
             ws.send(
                 JSON.stringify({
