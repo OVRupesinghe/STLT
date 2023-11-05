@@ -186,5 +186,5 @@ const createBill = (billData) => {
 
 //listen
 app.listen(process.env.PORT, () => {
-    console.log(`Server running at port ${process.env.PORT}`);
+    console.log(`Billing microservice Server running at port ${process.env.PORT}`);
 });

@@ -185,7 +185,7 @@ app.get('/services/:id/users', async (req, res) => {
 
 //listen on the port specified in the .env file
 app.listen(process.env.PORT, () => {
-    console.log(`provision micro service Listening on port http://localhost:${process.env.PORT}`);
+    console.log(`provision microservice Listening on port http://localhost:${process.env.PORT}`);
 });
 
 

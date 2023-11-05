@@ -4,7 +4,6 @@ require('dotenv').config();
 const data = require('./schema/data.json'); //
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
-const e = require('express');
 
 app.use(express.json());
 
@@ -130,5 +129,5 @@ app.get('/payment/:id', async (req, res) => {
 
 //start the server
 app.listen(process.env.PAYMENT_GATEWAY_SERVICE_PORT, () => {
-    console.log('payment gateway service started on port: ' + process.env.PAYMENT_GATEWAY_SERVICE_PORT);
+    console.log('payment gateway microservice started on port: ' + process.env.PAYMENT_GATEWAY_SERVICE_PORT);
 });
