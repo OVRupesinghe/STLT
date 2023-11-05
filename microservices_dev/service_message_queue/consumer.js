@@ -45,8 +45,7 @@ class Consumer {
     if (this.connection && this.channel && this.queue) {
       await this.channel.consume(this.queue.queue, (msg) => {
         JSON.parse(msg.content.toString());
-        callback(msg);
-        this.channel.ack(msg); // acknowledge the message was received
+        callback(this.channel,msg);
       });
     }
   }

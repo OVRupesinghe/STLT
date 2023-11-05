@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Web Learn",
+    "description": "ashjdagjhsd",
+    "price": 100,
+    "users": [
+      {
+        "id": 1,
+        "status": "active"
+      },
+      {
+        "id": 2,
+        "status": "inactive"
+      },
+      {
+        "id": 5,
+        "status": "inactive"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Web Social",
+    "description": "ashjdagjhsd",
+    "price": 200,
+    "users": [
+      {
+        "id": 5,
+        "status": "active"
+      },
+      {
+        "id": 3,
+        "status": "active"
+      }
+    ]
+  }
+]

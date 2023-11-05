@@ -1,0 +1,29 @@
+[
+  {
+    "id": "c254a90f-21d9-4ce5-802a-ddd9c6992900",
+    "paymentId": "",
+    "userId": 1,
+    "serviceId": 1,
+    "amount": 100,
+    "when": "2023-11-05T14:25:31.966Z",
+    "status": "pending"
+  },
+  {
+    "id": "b1ec8efe-7c33-4c0b-acd7-4d5785869c38",
+    "paymentId": "",
+    "userId": 2,
+    "serviceId": 1,
+    "amount": 100,
+    "when": "2023-11-05T14:25:31.968Z",
+    "status": "pending"
+  },
+  {
+    "id": "9111977f-e697-41e7-a59f-d3477b293f54",
+    "paymentId": "",
+    "userId": 5,
+    "serviceId": 1,
+    "amount": 100,
+    "when": "2023-11-05T14:25:31.970Z",
+    "status": "pending"
+  }
+]

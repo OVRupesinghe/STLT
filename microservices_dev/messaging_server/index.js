@@ -25,8 +25,9 @@ setupProducer();
 async function setupConsumer() {
   try {
     await consumer.setup("ROUTER", "direct", "MESSAGE_REPLY", "MESSAGE_REPLY");
-    const handleMessage = (message) => {
+    const handleMessage = (channel,message) => {
       console.log(JSON.parse(message.content.toString()));
+      channel.ack(message); // acknowledge the message was received
     };
     consumer.consume(handleMessage);
   } catch (error) {

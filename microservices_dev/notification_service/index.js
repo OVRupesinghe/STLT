@@ -21,10 +21,11 @@ async function setupConsumer() {
      *    "message": "CONTENT OF THE MESSAGE",
      * }
      */
-    const handleMessage = (message) => {
+    const handleMessage = (channel,message) => {
+      
       const msg = JSON.parse(message.content.toString());
-      console.log(message.properties);
-      console.log(msg);
+      // console.log(message.properties);
+      // console.log(msg);
       if (msg.type) {
         switch (msg.type) {
           case "EMAIL":
@@ -94,6 +95,7 @@ async function setupConsumer() {
             );
           }
         }
+        channel.ack(message); // acknowledge the message was received
       }
     };
     consumer.consume(handleMessage);
