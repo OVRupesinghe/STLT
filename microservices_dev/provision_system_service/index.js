@@ -82,9 +82,6 @@ app.post('/services/:id/activate', async (req, res) => {
         const response = await axios.post(process.env.PROVISION_SYSTEM_URL + process.env.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
         // console.log(response?.data);
         if(response.status == 200){
-            //TODO:: add payment service call here
-            //?we don't need to process the payment when the service is activated, we can do it at the end of the month
-            //?we just need to send an notification to the user that the service has been activated
 
             //return the services
             res.statusCode = 200;
@@ -104,7 +101,7 @@ app.post('/services/:id/activate', async (req, res) => {
                     type: "EMAIL",
                     message: `Your service '${response?.data?.serviceName?? ''}' has been activated`,
                     from: "provisioningService@gmail.com",
-                    to: "userTemp@gmial.com",
+                    to: userId,//"userTemp@gmial.com",
                 };
                 producer.produceToQueue(
                     "ROUTER",

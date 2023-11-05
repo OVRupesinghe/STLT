@@ -68,7 +68,7 @@ app.post('/bills', (req, res) => {
             type: "EMAIL",
             message: `You have a bill of RS.${billData?.amount}`,
             from: "billingService@gmail.com",
-            to: "userTemp@gmial.com",
+            to: billData?.userId,//"userTemp@gmial.com",
         };
         producer.produceToQueue(
             "ROUTER",
@@ -130,9 +130,9 @@ app.post('/bills/:id/pay', async (req, res) => {
         // Set up the consumer to process the payment status
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
         const handleMessage = (channel,message) => {
+            channel.ack(message); // acknowledge the message was received
 
             const response = JSON.parse(message.content.toString());
-            channel.ack(message); // acknowledge the message was received
             // step 1 : check if the message is successful
             if(response.statusCode != 200){
                 console.log("Error calling from payment gateway service");
@@ -159,6 +159,29 @@ app.post('/bills/:id/pay', async (req, res) => {
                             break;
                         }
                     }
+
+                    //send message to the notification service to notify the user about the bill
+                    const {producer} = prepareForSendNotification();
+                    // console.log("sending message to notification service to notify the user about the bill : ", billData?.userId , " : ", billData?.amount);
+
+                    console.log('Data written to file');
+                    //TODO:: Need to send user email
+                    const message = {
+                        type: "EMAIL",
+                        message: `You have a paid a bill of RS.${billData?.amount} , payment id : ${payment?.id} , payment status : ${payment?.status}, payment date : ${payment?.when}`,
+                        from: "billingService@gmail.com",
+                        to: billData?.userId,//"userTemp@gmial.com",
+                    };
+                    producer.produceToQueue(
+                        "ROUTER",
+                        "direct",
+                        "NOTICES",
+                        { ...message, time: new Date().getTime()},
+                        {
+                        replyTo: "BILLING_NOTIFICATION_REPLY",
+                        correlationId: uuid(),
+                        }
+                    );
 
                     //return the payment
                     console.log("Payment successful");
@@ -227,7 +250,7 @@ app.post('/bills/:id/cancel', async (req, res) => {
     try {
         console.log('cancelling the bill with id: ' + req.params.id);
 
-        //TODO:: send message to the payment gateway service to cancel the payment and get the payment status
+        //?send message to the payment gateway service to cancel the payment and get the payment status
         const payment = {data: {status: 'cancelled'}};
 
         if(payment?.data?.status){
@@ -264,9 +287,9 @@ app.post('/bills/generate', async(req, res) => {
         // Set up the consumer to process the services data
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
         const handleMessage = (channel,message) => {
+            channel.ack(message); // acknowledge the message was received
 
             const response = JSON.parse(message.content.toString());
-            channel.ack(message); // acknowledge the message was received
 
             // step 1 : check if the message is successful
             if(response.statusCode != 200){
@@ -324,7 +347,7 @@ app.post('/bills/generate', async(req, res) => {
                         type: "EMAIL",
                         message: `You have a bill of RS.${user?.amount} settle on ${new Date().toLocaleString(undefined, { month: 'long' })} for the services you have activated }`,
                         from: "billingService@gmail.com",
-                        to: "userTemp@gmial.com",
+                        to: user?.id,//"userTemp@gmial.com",
                     };
                     producer.produceToQueue(
                         "ROUTER",
@@ -436,8 +459,8 @@ const prepareForSendNotification = () => {
         try {
         await consumer.setup("ROUTER", "direct", "BILLING_NOTIFICATION_REPLY", "BILLING_NOTIFICATION_REPLY");
         const handleMessage = (channel,message) => {
-            console.log(JSON.parse(message.content.toString()));
             channel.ack(message); // acknowledge the message was received
+            console.log(JSON.parse(message.content.toString()));
         };
         consumer.consume(handleMessage);
         } catch (error) {
