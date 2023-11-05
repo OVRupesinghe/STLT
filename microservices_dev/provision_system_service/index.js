@@ -6,8 +6,39 @@ const fs = require('fs');
 const {v4: uuid } = require('uuid');
 const e = require('express');
 const axios = require('axios');
+const Consumer = require("../service_message_queue/consumer");
+const Producer = require("../service_message_queue/producer");
 
 app.use(express.json());
+
+// Create an instance of the Producer class
+const producer = new Producer();
+const consumer = new Consumer();
+
+// Set up the producer
+async function setupProducer() {
+    try {
+      await producer.setup();
+      console.log("Producer is connected and channel is created.");
+    } catch (error) {
+      console.error("Error setting up producer:", error);
+    }
+  }
+  setupProducer();
+  
+  // Set up the consumer
+  async function setupConsumer() {
+    try {
+      await consumer.setup("ROUTER", "direct", "PROVISION_REPLY", "PROVISION_REPLY");
+      const handleMessage = (message) => {
+        console.log(JSON.parse(message.content.toString()));
+      };
+      consumer.consume(handleMessage);
+    } catch (error) {
+      console.error("Error setting up consumer:", error);
+    }
+  }
+  setupConsumer();
 
 
 //endpoint to get all the services provided by the provision system REST API
@@ -78,7 +109,7 @@ app.post('/services/:id/activate', async (req, res) => {
         
         //call the provision system REST API to activate the service
         const response = await axios.post(process.env.PROVISION_SYSTEM_URL + process.env.PROVISION_SYSTEM_PORT + '/services/' + req.params.id + '/activate', req.body);
-
+        // console.log(response?.data);
         if(response.status == 200){
             //TODO:: add payment service call here
 
@@ -89,8 +120,27 @@ app.post('/services/:id/activate', async (req, res) => {
             });
             console.log('Service already activated');
         }
-        else if(response.status == 204)
+        else if(response.status == 201)
             {
+                // TODO:: add the notification service call here
+                // send a message to the notification service to send an email to the user
+                const message = {
+                    type: "EMAIL",
+                    message: `Your service '${response?.data?.serviceName?? ''}' has been activated`,
+                    from: "provisioningService@gmail.com",
+                    to: "userTemp@gmial.com",
+                };
+                producer.produceToQueue(
+                    "ROUTER",
+                    "direct",
+                    "NOTICES",
+                    { ...message, time: new Date().getTime() },
+                    {
+                    replyTo: "PROVISION_REPLY",
+                    correlationId: uuid(),
+                    }
+                );
+
                 res.statusCode = 201;
                 res.json({
                     message: 'Service activated successfully'

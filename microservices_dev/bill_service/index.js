@@ -4,6 +4,12 @@ require('dotenv').config();
 const data = require('./schema/data.json');
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
+const Consumer = require("../service_message_queue/consumer"); // Import the Consumer class
+const Producer = require("../service_message_queue/producer");
+
+// Create an instance of the Consumer class & Producer class
+const consumer = new Consumer();
+const producer = new Producer();
 
 app.use(express.json());
 

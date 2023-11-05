@@ -15,7 +15,19 @@
       },
       {
         "id": 5,
-        "status": "inactive"
+        "status": "active"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Web Social",
+    "description": "ashjdagjhsd",
+    "price": 100,
+    "users": [
+      {
+        "id": 5,
+        "status": "active"
       }
     ]
   }

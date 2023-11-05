@@ -92,8 +92,8 @@ app.post('/services/:id/activate', (req, res) => {
             try {        
                 fs.writeFileSync('./data.json', JSON.stringify(data, null, 2));
                 console.log('Data written to file');
-                res.statusCode = 204;   //activated
-                res.json({ message: "Service activated successfully" });
+                res.statusCode = 201;   //activated
+                res.json({ message: "Service activated successfully", serviceName: service.name});
                 return;        
             } catch (err) {
                 console.error('Error writing file', err);
