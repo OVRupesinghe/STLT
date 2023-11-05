@@ -9,8 +9,8 @@
     "password": "Kamikaze123@",
     "address": "No.88, battiyawatta road, Thumbowila, Piliyandala",
     "role": "user",
-    "refreshToken": "",
-    "resetToken": "999cefb2-574f-49da-8eba-4f75287709bb"
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwaG9uZSI6IjA3MTA5NDQ5MjciLCJ1c2Vycm9sZSI6InVzZXIiLCJpYXQiOjE2OTkxOTcyMzIsImV4cCI6MTY5OTgwMjAzMn0.E8SsAmtiWJp3cmjCG_L7xUmJolRC0Xg78Am1Ak9hYEY",
+    "resetToken": "29b38f04-9be7-49dd-a9ea-2b81cbee3fc6"
   },
   {
     "id": "5e7f99f8-3515-4fac-a2eb-39b44a6001e8",
@@ -22,6 +22,19 @@
     "password": "Kamikaze123@",
     "address": "88, Battiyawatta road, Thumbowila, Piliyandala",
     "role": "user",
+    "refreshToken": "",
+    "resetToken": ""
+  },
+  {
+    "id": "c3b0b2a0-4b1a-4b1a-8b0a-2b0b2b0b2b0b",
+    "fname": "Support",
+    "lname": "1",
+    "username": "user3",
+    "email": "s1@gmail.com",
+    "phone": "0710944929",
+    "password": "1234",
+    "address": "No.88, battiyawatta road, Thumbowila, Piliyandala",
+    "role": "surpport",
     "refreshToken": "",
     "resetToken": ""
   }
