@@ -20,6 +20,7 @@ app.post("/login", (req, res) => {
       const userId = user.id;
       const userrole = user.role;
       const payload = {
+        userId: userId,
         phone: user.phone,
         userrole: userrole,
       };
@@ -102,7 +103,7 @@ app.get("/checkRefreshToken/:refreshToken", (req, res) => {
   for (var user of data) {
     if (user.refreshToken === refreshToken) {
       res.statusCode = 200;
-      res.json({ message: "Valid refresh token", phone: user.phone });
+      res.json({ message: "Valid refresh token", phone: user.phone, userId: user.id });
       return;
     }
   }

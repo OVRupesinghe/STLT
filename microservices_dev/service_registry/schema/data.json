@@ -10,5 +10,11 @@
     "host": "localhost",
     "port": 10002,
     "lastHeartBeat": 0
+  },
+  {
+    "name": "billingService",
+    "host": "localhost",
+    "port": 1555,
+    "lastHeartBeat": 0
   }
 ]

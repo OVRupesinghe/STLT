@@ -246,11 +246,13 @@ app.get("/refresh", async (req, res) => {
           let intermediaData = await intermediaResponse.data;
           const userrole = "user";
           const phone = intermediaData.phone;
+          const userId = intermediaData.userId;
          
           // User is authenticated. Generate a JWT token with user information.
           const payload = {
             phone: phone,
             userrole: userrole,
+            userId: userId,
           };
      
           jwt.verify(
@@ -263,7 +265,7 @@ app.get("/refresh", async (req, res) => {
                 process.env.JWT_TOKEN_SECRET,
                 { expiresIn: '15m' }
               )
-              res.json({ accessToken, userrole, phone })
+              res.json({ accessToken, userrole, phone, userId })
             }
           )
         } catch (error) {
@@ -325,6 +327,37 @@ app.get("/checkphone/:phone", async (req, res) => {
 
 app.get("/checkphoneValidity/:phone", async (req, res) => {
   checkData(req, res, "checkphoneValidity", req.params.phone);
+});
+
+
+async function checkBilling(req, res, endpoint, params) {
+  const dataParam = params;
+  try {
+    const response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/billingService`
+    );
+    const data = await response.data;
+
+    if (data) {
+      try {
+        const intermediaResponse = await axios.get(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/${endpoint}/${dataParam}`
+        );
+        const intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.status(401).json(error.response.data);
+      }
+    } else {
+      res.status(500).json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+app.get("/bills/user/:userId", async (req, res) => {
+  checkBilling(req, res, "bills/user", req.params.userId);
 });
 
 app.listen(process.env.PORT, () => {
