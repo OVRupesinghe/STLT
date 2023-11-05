@@ -5,6 +5,8 @@ const data = require('./schema/data.json'); //
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
 const axios = require('axios');
+const Consumer = require("../service_message_queue/consumer");
+const Producer = require("../service_message_queue/producer");
 
 app.use(express.json());
 
@@ -12,24 +14,28 @@ app.use(express.json());
 
 //tokenize the credit card information
 app.post('/payment/tokenize', async (req, res) => {
+    
+    const { statusCode, data, message } = await tokenizeCreditCard(req);
+    res.statusCode = statusCode;
+    res.json({ data, message });
+});
+
+const tokenizeCreditCard = async (req) => {
     try {
         console.log('tokenizing the credit card information');
 
         //call the payment gateway REST API to tokenize the credit card information
         const token = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/tokenize', req.body);
 
-        //return the token
-        res.statusCode = 200;
-        res.json(token.data);
+        console.log("Done");
+        return { statusCode: 200, data: token.data };
     } catch (error) {
         console.error(error);
-        res.statusCode = error.response.status;
-        res.json({ message: error.response.data.message });
+        return { statusCode: error.response.status, message: error.response.statusText };
     }
-});
+}
 
-//process the payment (create a payment)
-app.post('/payment/process', async (req, res) => {
+const processPayment = async (req) => {
     try {
         console.log('processing the payment');
 
@@ -53,14 +59,20 @@ app.post('/payment/process', async (req, res) => {
             console.log('Data written to file');
 
             //return the payment
-            res.statusCode = 200;
-            res.json(payment.data);
+            return { statusCode: 200, data: paymentData };
         }
     } catch (error) {
-        console.error(error);
-        res.statusCode = error.response.status;
-        res.json({ message: error.response.data.message });
+        console.error(error.response);
+        return { statusCode: error.response.status, message: error.response.statusText };
     }
+}
+
+//process the payment (create a payment)
+app.post('/payment/process', async (req, res) => {
+    
+    const { statusCode, data, message } = await processPayment(req);
+    res.statusCode = statusCode;
+    res.json({ data, message });
 });
 
 //refund the payment
@@ -72,7 +84,7 @@ app.post('/payment/:id/refund', async (req, res) => {
         const response = await axios.post(process.env.PAYMENT_GATEWAY_URL + process.env.PAYMENT_GATEWAY_PORT + '/payments/' + req.params.id + '/refund', req.body);
 
         const payment = response.data;
-        console.log(payment);
+        // console.log(payment);
         if(payment.status){
             //update the payment in the database (in this case we will use a json file)
             if (payment.id == req.params.id) {
@@ -127,3 +139,111 @@ app.get('/payment/:id', async (req, res) => {
 app.listen(process.env.PAYMENT_GATEWAY_SERVICE_PORT, () => {
     console.log('payment gateway microservice started on port: ' + process.env.PAYMENT_GATEWAY_SERVICE_PORT);
 });
+
+
+
+//call endpoint to process a payment
+const prepareForProcessPayment = () => {
+    // Create an instance of the Consumer class
+    const consumer = new Consumer();
+    const producer = new Producer();
+
+    // Set up the consumer
+    async function setupConsumer() {
+        try {
+            await consumer.setup("ROUTER", "direct", "PAYMENTS", "PAYMENTS");
+            const handleMessage = async(request) => {
+
+                // need to recieve the data from the message format:
+                /*
+                {
+                    "cardName":"00820970869708",
+                    "expDate":"2025-09-20",
+                    "cvv":123,
+                    "userId":"1",
+                    "serviceId":"1",
+                    "amount":1000,
+                }
+                *must
+                */
+                //?No error handling done for now
+
+                const req = JSON.parse(request.content.toString());
+                const { correlationId, replyTo } = request.properties;
+
+                //return the token from credit card data
+                let req1 = {body:{...req,userId:'',serviceId:'',amount:''}};
+                const tokenData = await tokenizeCreditCard(req1);
+
+                if(tokenData.statusCode != 200)
+                {
+                    producer.produceToQueue(
+                        "ROUTER",
+                        "direct",
+                        replyTo,
+                        {
+                            statusCode: tokenData.statusCode,
+                            message: tokenData.message
+                        },
+                        {
+                        correlationId: correlationId,
+                        }
+                    );
+                    console.log("sent payment status[FAILED]:", tokenData);
+                    return;
+                }
+
+                //process the payment using generated token
+                const req2 = {body:{...req,token:tokenData?.data?.token,cardName:'',expDate:'',cvv:''}};
+                const { statusCode, data, message } = await processPayment(req2);
+                let response = {};
+                if(statusCode == 200)
+                {
+                    response = {
+                        statusCode: statusCode,
+                        data: data
+                    };
+                }
+                else
+                {
+                    response = {
+                        statusCode: statusCode,
+                        message: message
+                    };
+                }
+
+                producer.produceToQueue(
+                    "ROUTER",
+                    "direct",
+                    replyTo,
+                    {
+                        ...response,
+                    },
+                    {
+                    correlationId: correlationId,
+                    }
+                );
+                console.log("sent payment status:[SUCCESS]", response);
+            };
+            consumer.consume(handleMessage);
+        } catch (error) {
+            console.error("Error setting up consumer:", error);
+        }
+    }
+
+    async function setupProducer() {
+        try {
+            // Set up the consumer to listen to the same exchange and routing key
+            await producer.setup();
+        } catch (error) {
+            console.error("Error setting up consumer:", error);
+        }
+    }
+
+    setupProducer();
+    setupConsumer();
+
+    return { producer, consumer };
+}
+
+const {producer,consumer} = prepareForProcessPayment();

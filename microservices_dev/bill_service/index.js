@@ -98,24 +98,93 @@ app.post('/bills/:id/pay', async (req, res) => {
     try {
         console.log('paying the bill with id: ' + req.params.id);
 
-        //TODO:: send message to the payment gateway service to process the payment and get the payment status
-        const payment = true;
+        //create consumer for get the payment status from the payment gateway sevice
+        const consumer = new Consumer();
 
-        if(payment){
-            //update the bill in the database (in this case we will use a json file)
-            for (bill of data) {
-                if (bill.id == req.params.id) {
-                    bill.status = 'paid';
-                    fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
-                    console.log('Data written to file');
-                    break;
-                }
+        // Set up the consumer to process the payment status
+        await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
+        const handleMessage = (message) => {
+
+            const response = JSON.parse(message.content.toString());
+
+            // step 1 : check if the message is successful
+            if(response.statusCode != 200){
+                console.log("Error calling from payment gateway service");
+                res.statusCode = response.statusCode;
+                res.json({ "message": "Internal server error" });
+                return;
             }
+            else if(response.statusCode == 200)
+            {
+                // strp 2 : get the status
+                console.log("Excecuted process payment from payment gateway service");
+                const payment = response.data;
 
-            //return the payment
-            res.statusCode = 200;
-            res.json("Payment successful");
+                if(payment){
+                    //update the bill in the database (in this case we will use a json file)
+                    for (bill of data) {
+                        if (bill.id == req.params.id) {
+                            bill.status = 'paid';
+                            fs.writeFileSync('./schema/data.json', JSON.stringify(data, null, 2));
+                            console.log('Data written to file');
+                            break;
+                        }
+                    }
+
+                    //return the payment
+                    console.log("Payment successful");
+                    res.statusCode = 200;
+                    res.json("Payment successful");
+                    return;
+                }
+
+                //return the payment
+                console.log("Payment unsuccessful");
+                res.statusCode = 500;
+                res.json("Payment unsuccessful");
+                return;
+
+            }
         }
+
+        //consume the payment status from the payment gateway service
+        consumer.consume(handleMessage);
+        const {producer} = createProducer();
+
+        //just a request to the payment gateway service to get the payment status
+        //reply will be sent to the BILLING_SERVICES_REPLY queue through the consumer   ^^^^ UP :D
+        console.log("Sending request to process and get the payment status");
+        /*
+            {
+                "cardName":"00820970869708",
+                "expDate":"2025-09-20",
+                "cvv":123,
+                "userId":"1",
+                "serviceId":"1",
+                "amount":1000,
+            }
+            *must
+        */
+        const reqBody = {
+            cardName: req.body.cardName,
+            expDate: req.body.expDate,
+            cvv: req.body.cvv,
+            userId: req.body.userId,
+            serviceId: req.body.serviceId,
+            amount: req.body.amount
+        };
+        
+        producer.produceToQueue(
+            "ROUTER",
+            "direct",
+            "PAYMENTS",
+            { ...reqBody, time: new Date().getTime() },
+            {
+            replyTo: "BILLING_SERVICES_REPLY",
+            correlationId: uuid(),
+            }
+        );
+        
     } catch (error) {
         console.error(error);
         res.statusCode = error.response.status;
@@ -166,8 +235,6 @@ app.post('/bills/generate', async(req, res) => {
         // Set up the consumer to process the services data
         await consumer.setup("ROUTER", "direct", "BILLING_SERVICES_REPLY", "BILLING_SERVICES_REPLY");
         const handleMessage = (message) => {
-            // console.log("recieved services data : ",JSON.parse(message.content.toString()));
-            // console.log(message.properties);
 
             const response = JSON.parse(message.content.toString());
 
@@ -182,12 +249,12 @@ app.post('/bills/generate', async(req, res) => {
             {
                 // strp 2 : get the services
                 console.log("Success getting services from provision service");
-                const services = response.data; //assign the response from the provision system service call to this variable
+                const services = response.data;
 
                 //Step 3 : get all the activated users for each service
                 let users = [];
                 for (service of services) {
-                    const activatedUsers = service?.users; //assign the response from the provision system service call to this variable
+                    const activatedUsers = service?.users;
                     //Step 3 : calculate the bill for each user
                     for (user of activatedUsers) {
                         const billData = {
@@ -249,7 +316,7 @@ app.post('/bills/generate', async(req, res) => {
 
         //consume the services data from the provision system
         consumer.consume(handleMessage);
-        const {producer} = prepareForGetServices();
+        const {producer} = createProducer();
 
         //just a request to the provision system to get all the services
         //reply will be sent to the BILLING_SERVICES_REPLY queue through the consumer   ^^^^ UP :D
@@ -264,7 +331,6 @@ app.post('/bills/generate', async(req, res) => {
             correlationId: uuid(),
             }
         );
-
 
     }
     catch (error) {
@@ -299,10 +365,9 @@ app.listen(process.env.PORT, () => {
 });
 
 
-const prepareForGetServices = ()=>{
+const createProducer = ()=>{
     // Create an instance of the Producer class
     const producer = new Producer();
-    const consumer = new Consumer();
 
     // Set up the producer
     async function setupProducer() {
