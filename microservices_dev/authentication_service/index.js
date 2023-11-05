@@ -7,6 +7,7 @@ const cors = require("cors");
 const data = require("./schema/data.json");
 const exisitingUsers = require("./schema/existing_users.json");
 const jwt = require("jsonwebtoken");
+const {sendMail} = require('./authMessenger');
 
 app.use(express.json());
 
@@ -40,6 +41,60 @@ app.post("/login", (req, res) => {
   res.statusCode = 401;
   res.json({ message: "Login failed" });
 });
+
+app.post("/logout", (req, res) => {
+
+  const { refreshToken } = req.body;
+  for (var i = 0; i < data.length; i++) {
+    if (data[i].refreshToken === refreshToken) {
+      data[i].refreshToken = "";
+      fs.writeFileSync("./schema/data.json", JSON.stringify(data, null, 2));
+      res.statusCode = 200;
+      res.json({ message: "Logout successful" });
+      return;
+    }
+  }
+  res.statusCode = 401;
+  res.json({ message: "Logout failed" });
+});
+
+app.post("/changePassword", (req, res) => {
+  const { phone, pass } = req.body;
+
+  //find the user with the phone number and update the password and write back to the json file
+  for (var user of data) {
+    if (user.phone === phone) {
+      user.password = pass;
+      fs.writeFileSync("./schema/data.json", JSON.stringify(data, null, 2));
+      res.statusCode = 200;
+      res.json({ message: "Password changed successfully" });
+      return;
+    }
+  }
+  res.statusCode = 401;
+  res.json({ message: "Password change failed" });
+});
+
+app.post("/forgotPassword", (req, res) => {
+  const { email } = req.body;
+  for (var user of data) {
+    if (user.email === email) {
+      const resetToken = uuid();
+      const userId = user.id;
+      user.resetToken = resetToken;
+      fs.writeFileSync("./schema/data.json", JSON.stringify(data, null, 2));
+      //send email with the reset token
+      sendMail(email, resetToken, userId);
+      res.statusCode = 200;
+      res.json({ message: "Reset token sent to email" });
+      return;
+    }
+  }
+  res.statusCode = 401;
+  res.json({ message: "Reset token sending failed" });
+});
+
+
 
 app.get("/checkRefreshToken/:refreshToken", (req, res) => {
 //return user id with the token
@@ -119,7 +174,8 @@ app.post("/register", (req, res) => {
   const password = req.body.pass;
   const address = req.body.address;
   const role = "user";
-  const refreshToken = null;
+  const refreshToken = "";
+  const resetToken = "";
   const id = uuid();
   const user = {
     id,
@@ -131,7 +187,8 @@ app.post("/register", (req, res) => {
     password,
     address,
     role,
-    refreshToken
+    refreshToken,
+    resetToken,
   };
   data.push(user);
   fs.writeFileSync("./schema/data.json", JSON.stringify(data, null, 2));
@@ -190,3 +247,5 @@ app.listen(process.env.PORT, () => {
     `Auth service started : Listening on port http://localhost:${process.env.PORT}`
   );
 });
+
+

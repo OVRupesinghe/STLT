@@ -99,6 +99,41 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.get("/logout",
+  async (req, res) => {
+    const cookies = req.cookies;
+    try {
+      if (!cookies?.jwt) return res.sendStatus(401);
+      const refreshToken = cookies.jwt;
+      try {
+        let response = await axios.get(
+          `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`
+        );
+        let data = await response.data;
+        if (data) {
+          let intermediaResponse = await axios.post(
+            `http://${data.serviceInfo.host}:${data.serviceInfo.port}/logout`,
+            {
+              refreshToken,
+            }
+          );
+          let intermediaData = await intermediaResponse.data;
+          res.clearCookie("jwt");
+          res.json(intermediaData);
+        } else {
+          res.statusCode = 500;
+          res.json({ message: "An internal server error occurred" });
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+);
+
+
 app.post("/register", async (req, res) => {
   const user_data = req.body;
   try {
@@ -112,6 +147,71 @@ app.post("/register", async (req, res) => {
         let intermediaResponse = await axios.post(
           `http://${data.serviceInfo.host}:${data.serviceInfo.port}/register`,
           user_data
+        );
+        let intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.statusCode = 401;
+        res.json(error.response.data);
+      }
+    } else {
+      res.statusCode = 500;
+      res.json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+
+app.post("/changePassword", async (req, res) => {
+  console.log('tried to enter');
+  const { phone, pass } = req.body;
+  try {
+    let response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`
+    );
+    let data = await response.data;
+
+    if (data) {
+      try {
+        let intermediaResponse = await axios.post(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/changePassword`,
+          {
+            phone,
+            pass,
+          }
+        );
+        let intermediaData = await intermediaResponse.data;
+        res.json(intermediaData);
+      } catch (error) {
+        res.statusCode = 401;
+        res.json(error.response.data);
+      }
+    } else {
+      res.statusCode = 500;
+      res.json({ message: "An internal server error occurred" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.post("/forgotPassword", async (req, res) => {
+  const { email } = req.body;
+  try {
+    let response = await axios.get(
+      `http://localhost:${process.env.SERVICE_REGISTRY_PORT}/services/authenticationService`
+    );
+    let data = await response.data;
+      
+    if (data) {
+      try {
+        let intermediaResponse = await axios.post(
+          `http://${data.serviceInfo.host}:${data.serviceInfo.port}/forgotPassword`,
+          {
+            email,
+          }
         );
         let intermediaData = await intermediaResponse.data;
         res.json(intermediaData);

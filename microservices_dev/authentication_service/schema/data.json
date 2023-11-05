@@ -4,12 +4,13 @@
     "fname": "chamath",
     "lname": "Gunasinghe",
     "username": "user2",
-    "email": "or@gmail.com",
+    "email": "oshada.rupasinghe@gmail.com",
     "phone": "0710944927",
-    "password": "1234",
+    "password": "Kamikaze123@",
     "address": "No.88, battiyawatta road, Thumbowila, Piliyandala",
     "role": "user",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwaG9uZSI6IjA3MTA5NDQ5MjciLCJ1c2Vycm9sZSI6InVzZXIiLCJpYXQiOjE2OTkxNzAxNjksImV4cCI6MTY5OTc3NDk2OX0.eWEVA3Lwhs4t9QKa9uGNlrD3ngUlkrLQyvlB6CoOKs4"
+    "refreshToken": "",
+    "resetToken": "999cefb2-574f-49da-8eba-4f75287709bb"
   },
   {
     "id": "5e7f99f8-3515-4fac-a2eb-39b44a6001e8",
@@ -21,6 +22,7 @@
     "password": "Kamikaze123@",
     "address": "88, Battiyawatta road, Thumbowila, Piliyandala",
     "role": "user",
-    "refreshToken": null
+    "refreshToken": "",
+    "resetToken": ""
   }
 ]
