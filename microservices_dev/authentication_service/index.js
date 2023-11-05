@@ -6,6 +6,13 @@ const users = require("./schema/users.json");
 const fs = require("fs");
 const { v4: uuid } = require("uuid");
 const cors = require("cors");
+const Consumer = require("../service_message_queue/consumer"); // Import the Consumer class
+const Producer = require("../service_message_queue/producer");
+
+
+// Create an instance of the Consumer class
+const consumer = new Consumer();
+const producer = new Producer();
 
 app.use(express.json());
 
@@ -82,3 +89,66 @@ app.listen(process.env.PORT, () => {
     `Auth service started : Listening on port http://localhost:${process.env.PORT}`
   );
 });
+
+
+async function setupConsumer() {
+  try {
+    // Set up the consumer to listen to the same exchange and routing key
+    await consumer.setup("ROUTER", "direct", "AUTHENTICATE", "AUTHENTICATE");
+    // Set up the consumer to listen to the same exchange and routing key
+
+    // Define a callback function to handle incoming messages
+    const handleMessage = async (channel, message) => {
+      channel.ack(message); // acknowledge the message was received
+      // console.log(JSON.parse(message.content.toString()));
+      const { correlationId, replyTo } = message.properties;
+
+      console.log("sending a single user");
+      const userId = JSON.parse(message.content.toString()).userId;
+
+      let response = {}; 
+      for (user of data) {
+        if (user.id == userId) {
+          response = { statusCode:200,user: user };
+          
+          producer.produceToQueue(
+            "ROUTER",
+            "direct",
+            replyTo,
+            response,
+            {
+              correlationId: correlationId,
+            }
+          );
+          return;
+        }
+      }
+
+      response = { statusCode:404, message: "User cannot be found" };
+      producer.produceToQueue(
+        "ROUTER",
+        "direct",
+        replyTo,
+        response,
+        {
+          correlationId: message.properties.correlationId,
+        }
+      );
+    };
+    await consumer.consume(handleMessage);
+  } catch (error) {
+    console.error("Error setting up consumer:", error);
+  }
+}
+
+async function setupProducer() {
+  try {
+    // Set up the consumer to listen to the same exchange and routing key
+    await producer.setup();
+  } catch (error) {
+    console.error("Error setting up consumer:", error);
+  }
+}
+
+setupProducer();
+setupConsumer();
