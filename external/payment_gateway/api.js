@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 require('dotenv').config();
-const data = require('./schema/data.json');
+const data = require('./data.json');
 const fs = require('fs');
 const {v4: uuid } = require('uuid');
 
