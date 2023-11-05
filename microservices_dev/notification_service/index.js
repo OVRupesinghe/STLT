@@ -55,7 +55,7 @@ async function setupConsumer() {
                         type: "EMAIL",
                         message: msg.message,
                         from: msg.from,
-                        to: user.email, //TODO: Authenticate doesn't provide email yet
+                        to: user.email,
                       });
                       response = {
                         message: "STATUS: SUCCESS - 200",
