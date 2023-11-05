@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Web Learn",
+    "description": "ashjdagjhsd",
+    "price": 100,
+    "users": [
+      {
+        "id": 1,
+        "status": "active"
+      },
+      {
+        "id": 2,
+        "status": "inactive"
+      },
+      {
+        "id": 5,
+        "status": "active"
+      }
+    ]
+  }
+]
